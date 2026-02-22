@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "107335462050",
+    "project_id": "madbunky-483520",
+    "storage_bucket": "madbunky-483520.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:107335462050:android:7840e7112e09b42928bbfb",
+        "android_client_info": {
+          "package_name": "com.aj.mad_bunky"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCk88O8j8tXEq1rQx5pU2ca1pUIHa2F8M4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

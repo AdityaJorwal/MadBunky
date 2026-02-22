@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
+    android:background="?android:attr/selectableItemBackground">
+
+    <TextView
+        android:id="@+id/subject_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="Subject Name"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF" />
+
+    <Switch
+        android:id="@+id/subject_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp" />
+
+</LinearLayout>

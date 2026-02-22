@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="#B2121212" /> <!-- 70% Opacity Deep Dark -->
+    <corners android:radius="24dp" />
+    <stroke android:width="0.5dp" android:color="#40FFFFFF" /> <!-- Sharper glass border -->
+</shape>

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_item_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@drawable/widget_item_glass_background"
+    android:padding="12dp"
+    android:layout_marginBottom="8dp">
+
+    <!-- Color Indicator Bar -->
+    <ImageView
+        android:id="@+id/widget_indicator_bar"
+        android:layout_width="4dp"
+        android:layout_height="36dp"
+        android:src="@drawable/widget_item_background"
+        android:backgroundTint="#2196F3"
+        android:layout_marginEnd="12dp" />
+
+    <!-- Text Info -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/widget_subject"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Physics"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:maxLines="1"
+                android:ellipsize="end" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="14:00 - 15:00"
+            android:textSize="13sp"
+            android:textColor="#B0BEC5"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Actions (Present / Proxy / Absent) -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <ImageButton
+            android:id="@+id/widget_btn_present"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_check"
+            android:background="@drawable/bg_action_btn_present"
+            android:contentDescription="Present"
+            android:tint="#4CAF50"
+            android:scaleType="centerInside"
+            android:padding="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_proxy"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_proxy"
+            android:background="@drawable/bg_action_btn_proxy"
+            android:contentDescription="Proxy"
+            android:tint="#FFC107"
+            android:scaleType="centerInside"
+            android:padding="8dp"
+            android:layout_marginEnd="8dp" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_absent"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_close"
+            android:background="@drawable/bg_action_btn_absent"
+            android:contentDescription="Absent"
+            android:tint="#F44336"
+            android:scaleType="centerInside"
+            android:padding="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>
