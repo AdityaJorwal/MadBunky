@@ -59,6 +59,22 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError();
 });
 
+class GuestNotifier extends StateNotifier<bool> {
+  final SharedPreferences prefs;
+
+  GuestNotifier(this.prefs) : super(prefs.getBool('isGuest') ?? false);
+
+  void setGuestMode(bool isGuest) {
+    state = isGuest;
+    prefs.setBool('isGuest', isGuest);
+  }
+}
+
+final isGuestProvider = StateNotifierProvider<GuestNotifier, bool>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return GuestNotifier(prefs);
+});
+
 // --- Auth Providers ---
 final authServiceProvider = Provider<AuthService>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
@@ -91,8 +107,10 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 class SettingsNotifier extends StateNotifier<AppSettings> {
   final SharedPreferences prefs;
   final BackupService backupService;
+  final GoogleCalendarService calendarService;
 
-  SettingsNotifier(this.prefs, this.backupService) : super(AppSettings()) {
+  SettingsNotifier(this.prefs, this.backupService, this.calendarService)
+      : super(AppSettings()) {
     _loadSettings();
   }
 
@@ -391,7 +409,8 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((
 ) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final backupService = ref.watch(backupServiceProvider);
-  return SettingsNotifier(prefs, backupService);
+  final calendarService = ref.watch(googleCalendarServiceProvider);
+  return SettingsNotifier(prefs, backupService, calendarService);
 });
 
 // --- Debug Log Provider (Temporary) ---
@@ -486,7 +505,13 @@ class SavedScheduleNotifier extends StateNotifier<List<File>> {
         .toList();
 
     // Sort by modification time desc
-    files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+    files.sort((a, b) {
+      try {
+        return b.lastModifiedSync().compareTo(a.lastModifiedSync());
+      } catch (e) {
+        return 0;
+      }
+    });
 
     state = files;
   }
@@ -502,8 +527,17 @@ class SavedScheduleNotifier extends StateNotifier<List<File>> {
     final safeName = name.replaceAll(RegExp(r'[<>:"/\\|?*]'), '');
     final target = File('${scheduleDir.path}/$safeName.jpg');
 
-    await File(sourcePath).copy(target.path);
-    await _loadSchedules();
+    try {
+      final sourceFile = File(sourcePath);
+      if (await sourceFile.exists()) {
+        await sourceFile.copy(target.path);
+        await _loadSchedules();
+      } else {
+        debugPrint("SavedScheduleNotifier: Source file does not exist: $sourcePath");
+      }
+    } catch (e) {
+      debugPrint("SavedScheduleNotifier: Error copying file: $e");
+    }
   }
 
   Future<void> delete(File file) async {

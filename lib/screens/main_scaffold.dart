@@ -508,6 +508,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
       },
       child: ThunderOverlay(
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           extendBody: true,
           extendBodyBehindAppBar: true,
           body: Stack(
@@ -799,11 +800,17 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
                   !_showUserCard &&
                   !_showInsights &&
                   !isSearching)
-                Positioned(
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
                   right: 16,
-                  bottom: 120 + bottomPadding,
+                  bottom: (MediaQuery.of(context).viewInsets.bottom > 0
+                          ? 16
+                          : 120 + bottomPadding) +
+                      MediaQuery.of(context).viewInsets.bottom,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       // View Schedule Button [NEW]
                       Consumer(builder: (context, ref, _) {

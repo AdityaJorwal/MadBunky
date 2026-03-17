@@ -220,15 +220,17 @@ class GlassDialogContainer extends StatelessWidget {
                         ),
 
                       // Content
-                      Padding(
-                        padding: padding,
-                        child: child,
+                      Flexible(
+                        child: Padding(
+                          padding: padding,
+                          child: child,
+                        ),
                       ),
 
                       // Optional Actions Bar
                       if (actions != null)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                          padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: actions!,
@@ -244,4 +246,92 @@ class GlassDialogContainer extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Shows a premium, glassy SnackBar.
+void showMorphSnackBar(
+  BuildContext context, {
+  required String message,
+  bool isError = false,
+  IconData? icon,
+  Duration duration = const Duration(seconds: 4),
+}) {
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
+
+  // Clear existing snackbars to prevent stacking weirdly
+  ScaffoldMessenger.of(context).clearSnackBars();
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      duration: duration,
+      elevation: 0,
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      padding: EdgeInsets.zero,
+      content: OptimizedGlass(
+        borderRadius: BorderRadius.circular(20),
+        sigmaX: 12,
+        sigmaY: 12,
+        fallbackColor: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          decoration: BoxDecoration(
+            color: isDark
+                ? const Color(0xFF1E1E1E).withValues(alpha: 0.8)
+                : Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isError
+                  ? Colors.red.withValues(alpha: 0.3)
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.05)),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isError
+                      ? Colors.red.withValues(alpha: 0.1)
+                      : Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon ??
+                      (isError
+                          ? Icons.error_outline_rounded
+                          : Icons.check_circle_outline_rounded),
+                  color: isError ? Colors.redAccent : Colors.greenAccent,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  message,
+                  style: GoogleFonts.outfit(
+                    color: isDark ? Colors.white : Colors.black87,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }

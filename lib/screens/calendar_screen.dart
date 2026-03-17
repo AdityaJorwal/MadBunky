@@ -541,8 +541,19 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.file(File(imagePath!),
-                  height: 200, fit: BoxFit.contain),
+              child: Image.file(
+                File(imagePath!),
+                height: 200,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 200,
+                  width: double.infinity,
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  child: const Center(
+                    child: Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -972,17 +983,11 @@ class _DayViewState extends ConsumerState<_DayView> {
         .whereType<_DisplayItem>()
         .toList()
       ..sort((a, b) {
-        // 1. Pending at Top, Completed at Bottom
-        final aPending = a.status == AttendanceStatus.pending;
-        final bPending = b.status == AttendanceStatus.pending;
-        if (aPending && !bPending) return -1;
-        if (!aPending && bPending) return 1;
-
-        // 2. No-Time at Top (within same status group)
+        // 1. No-Time at Top
         if (!a.hasTime && b.hasTime) return -1;
         if (a.hasTime && !b.hasTime) return 1;
 
-        // 3. Chronological Time
+        // 2. Chronological Time
         if (!a.hasTime && !b.hasTime) return 0; // Both no-time, equal priority
 
         if (a.startTime.hour != b.startTime.hour) {
@@ -1095,24 +1100,21 @@ class _DayViewState extends ConsumerState<_DayView> {
                 top: 0,
                 left: 0,
                 right: 0,
-                child: SizedBox(
-                  height: MediaQuery.of(context).padding.top + 160,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                          height: MediaQuery.of(context).padding.top +
-                              95), // Increased from 70 to 95 to separate from Top Bar
-                      // Date Pickers
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: _VerticalDialerDatePicker(
-                          selectedDate: widget.selectedDate,
-                          onDateChanged: widget.onDateChanged,
-                        ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                        height: MediaQuery.of(context).padding.top +
+                            95), // Increased from 70 to 95 to separate from Top Bar
+                    // Date Pickers
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _VerticalDialerDatePicker(
+                        selectedDate: widget.selectedDate,
+                        onDateChanged: widget.onDateChanged,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
           ],
@@ -2919,8 +2921,8 @@ class _VerticalDialerDatePickerState extends State<_VerticalDialerDatePicker> {
                 : colorScheme.surface.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(40),
             border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.3),
-              width: 1,
+              color: colorScheme.outline.withValues(alpha: 0.8),
+              width: 2.0,
             ),
           ),
           child: Row(

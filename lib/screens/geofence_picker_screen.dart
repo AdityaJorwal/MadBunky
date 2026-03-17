@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart'; // Coordinate class
 import 'package:geolocator/geolocator.dart'; // For initial position
 import 'package:google_fonts/google_fonts.dart'; // Ensure font consistency
 import 'dart:ui'; // For ImageFilter
+import '../utils/morph_dialog.dart';
 
 class GeofencePickerScreen extends StatefulWidget {
   final LatLng? initialLocation;
@@ -96,10 +97,9 @@ class _GeofencePickerScreenState extends State<GeofencePickerScreen> {
       } else {
         // Show error toast if we couldn't get ANY location
         // (Assuming MainScaffold.showGlassToast is available or use SnackBar)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text("Could not fetch location. Please move map manually.")),
+        showMorphSnackBar(
+          context,
+          message: "Could not fetch location. Please move map manually.",
         );
       }
     }

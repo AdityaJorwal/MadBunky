@@ -233,6 +233,8 @@ class _StatsDetailScreenState extends State<StatsDetailScreen> {
           ],
           lineTouchData: LineTouchData(
               touchTooltipData: LineTouchTooltipData(
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
                   getTooltipColor: (_) => const Color(0xFF161B22),
                   getTooltipItems: (touchedSpots) {
                     return touchedSpots.map((spot) {

@@ -159,6 +159,12 @@ class SchedulesGridScreen extends ConsumerWidget {
                           file,
                           key: ValueKey(file.path),
                           fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.grey.withValues(alpha: 0.1),
+                            child: const Center(
+                              child: Icon(Icons.broken_image_outlined, color: Colors.grey),
+                            ),
+                          ),
                         ),
                         // Gradient & Title at bottom
                         Positioned(

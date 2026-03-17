@@ -16,6 +16,18 @@ class AuthWrapper extends ConsumerWidget {
 
     return restoration.when(
       data: (_) {
+        final isGuest = ref.watch(isGuestProvider);
+        if (isGuest) {
+          // User skipped login
+          return GlobalGestureHandler(
+            child: SyncManager(
+              child: NotificationImageGenerator.wrapper(
+                child: const MainScaffold(),
+              ),
+            ),
+          );
+        }
+
         final authState = ref.watch(authStateProvider);
         return authState.when(
           data: (user) {

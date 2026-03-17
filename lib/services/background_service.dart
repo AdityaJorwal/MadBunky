@@ -22,6 +22,10 @@ import 'package:intl/intl.dart'; // Added for DateFormat
 // Top-level entry point (Safe for Background Service)
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) async {
+  if (service is AndroidServiceInstance) {
+    service.setAsForegroundService();
+  }
+
   // 0. MASTER TRY-CATCH
   try {
     // Vital for Plugins
@@ -33,6 +37,33 @@ void onStart(ServiceInstance service) async {
     await prefs.reload();
     await prefs.setString('service_status', "Starting (TopLevel)...");
     debugPrint("BG Service: MARKER 1 - Started (TopLevel)");
+
+    // Register Port for Background Communication
+    final ReceivePort port = ReceivePort();
+    IsolateNameServer.removePortNameMapping('madbunky_bg_service');
+    IsolateNameServer.registerPortWithName(port.sendPort, 'madbunky_bg_service');
+    port.listen((message) {
+      if (message is String && message == 'update') {
+        if (MadBackgroundService._interruptSleep != null &&
+            !MadBackgroundService._interruptSleep!.isCompleted) {
+          MadBackgroundService._interruptSleep!.complete();
+        }
+      } else if (message is Map<String, dynamic>) {
+        // Handle manual status update from notification isolate
+        final sessionId = message['sessionId'] as String?;
+        final statusIndex = message['statusIndex'] as int?;
+        if (sessionId != null && statusIndex != null) {
+          final status = AttendanceStatus.values[statusIndex];
+          LiveActivityService().manuallyUpdateStatus(sessionId, status);
+          debugPrint("BG Service Port: Received Status Update for $sessionId");
+          
+          if (MadBackgroundService._interruptSleep != null &&
+              !MadBackgroundService._interruptSleep!.isCompleted) {
+            MadBackgroundService._interruptSleep!.complete();
+          }
+        }
+      }
+    });
 
     // Initialize Logging (Robust)
     try {
@@ -199,7 +230,7 @@ class MadBackgroundService {
     await service.configure(
       androidConfiguration: AndroidConfiguration(
         onStart: onStart, // Uses Top-Level Function
-        autoStart: true, // Enable Auto Start on Boot
+        autoStart: false, // Must be false to avoid crashing without permissions on boot/start
         isForegroundMode: true,
         notificationChannelId: 'auto_attendance_service',
         initialNotificationTitle: 'Attendance Services Active',
@@ -207,8 +238,7 @@ class MadBackgroundService {
         foregroundServiceNotificationId: 888,
       ),
       iosConfiguration: IosConfiguration(
-        autoStart:
-            true, // Enable for iOS too (though less reliable for long running)
+        autoStart: false, // Must be false to avoid premature launch
         onForeground: onStart,
         onBackground: onIosBackground,
       ),

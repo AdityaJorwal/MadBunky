@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/providers.dart';
 
-import '../services/mega_schedule_parser.dart'; // For ScheduleExtractionResult
-import '../widgets/pdf_confirmation_dialog.dart';
 import '../utils/morph_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -36,16 +34,15 @@ class _GoogleCalendarImportDialogState
     setState(() => _isLoading = true);
     try {
       final account = await ref.read(googleCalendarServiceProvider).signIn();
-      if (account != null && mounted) {
-        // Success
+      if (account == null && mounted) {
+        showMorphSnackBar(context, message: "Login Cancelled", icon: Icons.info_outline);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error connecting: $e"),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Error connecting: $e",
+          isError: true,
         );
       }
     } finally {
@@ -68,66 +65,26 @@ class _GoogleCalendarImportDialogState
       if (!mounted) return;
 
       if (sessions.isEmpty) {
-        // Show toast
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("No events found for this week."),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        showMorphSnackBar(
+          context,
+          message: "No events found for this week.",
         );
         return;
       }
 
-      // Capture notifier BEFORE popping to ensure valid ref
-      final notifier = ref.read(attendanceProvider.notifier);
-
-      Navigator.pop(context); // Close the import chooser
-
-      // Show Confirmation
-      // We wrap the sessions in ScheduleExtractionResult
-      final result = ScheduleExtractionResult(
-        sessions: sessions,
-        instituteName: "Google Calendar",
-        dateRange: _formattedRange,
-      );
-
-      // Use a new context if possible or ensure this context is valid.
-      // Actually passing `notifier` instance is safer.
-      if (!mounted) return; // Paranoia check
-
-      showMorphDialog(
-        context: context,
-        builder: (c) => PdfConfirmationDialog(
-          extractedSessions: result.sessions,
-          instituteName: result.instituteName,
-          dateRange: result.dateRange,
-          showSaveOption: false, // Don't save as image/schedule file
-          initialDate: _selectedStartOfWeek,
-          onConfirm: (confirmedSessions, selectedDate, _) {
-            for (var session in confirmedSessions) {
-              notifier.addClassSession(session);
-            }
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      "Imported ${confirmedSessions.length} classes from Calendar"),
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                ),
-              );
-            }
-          },
-        ),
-      );
+      // Instead of popping and showing dialog here (which can fail due to invalid context),
+      // we return the sessions to the caller to handle.
+      Navigator.pop(context, {
+        'sessions': sessions,
+        'startOfWeek': _selectedStartOfWeek,
+        'range': _formattedRange,
+      });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Import failed: $e")),
+        showMorphSnackBar(
+          context,
+          message: "Import failed: $e",
+          isError: true,
         );
       }
     } finally {

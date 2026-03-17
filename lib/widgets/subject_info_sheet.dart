@@ -9,6 +9,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../theme.dart';
 import '../utils/morph_dialog.dart';
+import 'attendance_indicator.dart';
 
 class SubjectInfoSheet extends ConsumerStatefulWidget {
   final String subjectId;
@@ -44,25 +45,76 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
 
     return GlassDialogContainer(
       title: 'Subject Insights',
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       actions: [
-        TextButton(
+        OutlinedButton(
           onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            minimumSize: const Size(0, 36),
+          ),
           child: Text(
             "Close",
             style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
           ),
         ),
       ],
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header stats summary
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  CircularAttendanceIndicator(
+                    percentage: subject.currentPercentage,
+                    target: subject.targetPercentage.toDouble(),
+                    color: calculateStatus(subject).color,
+                    size: 40,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Current: ${subject.currentPercentage.toStringAsFixed(1)}%",
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        Text(
+                          "Target: ${subject.targetPercentage}%",
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           // 1. Graph Section with Toggle
           Container(
-            height: 280,
+            height: 220,
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(24),
@@ -70,15 +122,15 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
                 color: Colors.white.withValues(alpha: 0.05),
               ),
             ),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               children: [
                 // Toggle
                 Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -88,7 +140,7 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 // Graph content
                 Expanded(
                   child: AnimatedSwitcher(
@@ -103,13 +155,13 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
           // 2. History Section Title
           Text(
             "Attendance History",
             style: GoogleFonts.outfit(
-              fontSize: 16,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
               color: Theme.of(context)
                   .colorScheme
@@ -117,21 +169,18 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
                   .withValues(alpha: 0.8),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
 
-          // 3. Scrollable History List
-          // We use a constrained Flexible/Expanded logic or just fixed height container
-          // inside the dialog's flexible scroll area if available.
-          // GlassDialogContainer usually wraps child in SingleChildScrollView if needed?
-          // Let's assume we want a fixed height scrollable area for history.
-          SizedBox(
-            height: 250,
+          Flexible(
             child: logs.isEmpty
                 ? Center(
-                    child: Text(
-                      "No history yet",
-                      style: GoogleFonts.outfit(
-                        color: Colors.white.withValues(alpha: 0.3),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        "No history yet",
+                        style: GoogleFonts.outfit(
+                          color: Colors.white.withValues(alpha: 0.3),
+                        ),
                       ),
                     ),
                   )
@@ -147,8 +196,9 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildToggleOption(String label, int index) {
     final isSelected = _selectedGraphIndex == index;
@@ -485,8 +535,9 @@ class _TrendLineChart extends StatelessWidget {
                 // Target Line
                 LineChartBarData(
                   spots: [
-                    const FlSpot(0, 75),
-                    FlSpot((spots.length - 1).toDouble(), 75)
+                    FlSpot(0, subject.targetPercentage.toDouble()),
+                    FlSpot((spots.length - 1).toDouble(),
+                        subject.targetPercentage.toDouble())
                   ],
                   isCurved: false,
                   color: Colors.white.withValues(alpha: 0.2),
@@ -520,14 +571,25 @@ class _TrendLineChart extends StatelessWidget {
                   touchTooltipData: LineTouchTooltipData(
                       getTooltipColor: (_) =>
                           Colors.black.withValues(alpha: 0.8),
+                      tooltipBorderRadius: BorderRadius.circular(12),
+                      tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      fitInsideHorizontally: true,
+                      fitInsideVertically: true,
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((spot) {
+                          final index = spot.x.toInt();
+                          if (index < 0 || index >= chronologicalLogs.length) {
+                             return null;
+                          }
+                          final log = chronologicalLogs[index];
+                          final dateStr = DateFormat('MMM d').format(log.timestamp);
+                          
                           return LineTooltipItem(
-                              "${spot.y.toStringAsFixed(1)}%",
+                              "$dateStr\n${spot.y.toStringAsFixed(1)}%",
                               const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold));
-                        }).toList();
+                        }).whereType<LineTooltipItem>().toList();
                       })),
             ),
           );
@@ -620,10 +682,18 @@ class _MonthlyBarChart extends StatelessWidget {
               gridData: FlGridData(show: false),
               barTouchData: BarTouchData(
                 touchTooltipData: BarTouchTooltipData(
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                  tooltipBorder: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.1)),
                   getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
+                  tooltipBorderRadius: BorderRadius.circular(12),
+                  tooltipPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    final isPresent = rod.color == AppTheme.pastelGreen;
+                    final statusStr = isPresent ? "Present" : "Absent";
                     return BarTooltipItem(
-                      rod.toY.round().toString(),
+                      "$statusStr\n${rod.toY.round()}",
                       const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

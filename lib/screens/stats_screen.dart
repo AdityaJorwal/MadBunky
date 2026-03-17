@@ -432,6 +432,8 @@ class _GlobalTrendChart extends StatelessWidget {
             ],
             lineTouchData: LineTouchData(
                 touchTooltipData: LineTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
                     getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {

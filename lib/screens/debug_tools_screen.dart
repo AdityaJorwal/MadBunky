@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../utils/morph_dialog.dart';
 
 import '../models/models.dart';
 
@@ -570,9 +571,7 @@ class _DebugToolsScreenState extends ConsumerState<DebugToolsScreen>
 
     // Show quick feedback
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Test Class Scheduled (Starts in 5s)")),
-      );
+      showMorphSnackBar(context, message: "Test Class Scheduled (Starts in 5s)");
     }
   }
 }

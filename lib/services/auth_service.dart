@@ -82,12 +82,13 @@ class AuthService {
   /// Signs in anonymously (Guest Mode).
   Future<User?> signInAnonymously() async {
     try {
-      final UserCredential userCredential = await _auth.signInAnonymously();
+      // Offline mode: We no longer call Firebase's anonymous sign-in
+      // to avoid "admin-restricted-operation" errors if it's disabled in console.
       await persistAuthType('guest');
-      return userCredential.user;
+      return null; // No Firebase user for guests
     } catch (e) {
       if (kDebugMode) {
-        print("Error signing in anonymously: $e");
+        print("Error setting guest mode: $e");
       }
       rethrow;
     }

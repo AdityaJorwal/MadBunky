@@ -277,7 +277,11 @@ class _ScheduleViewerScreenState extends ConsumerState<ScheduleViewerScreen>
     try {
       final recorder = ui.PictureRecorder();
       final canvas = Canvas(recorder);
-      final bgImage = await decodeImageFromList(_currentFile.readAsBytesSync());
+      if (!_currentFile.existsSync()) {
+        throw Exception("File does not exist: ${_currentFile.path}");
+      }
+      final bytes = await _currentFile.readAsBytes();
+      final bgImage = await decodeImageFromList(bytes);
 
       canvas.drawImage(bgImage, Offset.zero, Paint());
 
@@ -458,10 +462,22 @@ class _ScheduleViewerScreenState extends ConsumerState<ScheduleViewerScreen>
                   child: Stack(
                     children: [
                       Center(
-                          child: Image.file(_currentFile,
-                              fit: BoxFit.contain,
-                              key: ValueKey(_currentFile
-                                  .path))), // Key ensures image reload if name changes
+                        child: Image.file(
+                          _currentFile,
+                          fit: BoxFit.contain,
+                          key: ValueKey(_currentFile.path),
+                          errorBuilder: (context, error, stackTrace) => const Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.broken_image, size: 48, color: Colors.white54),
+                                SizedBox(height: 16),
+                                Text("Could not load image", style: TextStyle(color: Colors.white54)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                       if (_isAnnotating)
                         Positioned.fill(
                           child: Listener(

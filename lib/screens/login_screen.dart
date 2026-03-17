@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mad_bunky/providers/providers.dart';
-import 'package:mad_bunky/theme.dart'; // Assuming AppTheme is here
+import 'package:mad_bunky/utils/morph_dialog.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -22,12 +22,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // which should trigger navigation in the root widget.
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Sign in failed: ${e.toString()}"),
-            backgroundColor: AppTheme.pastelRed, // Fallback color
-            behavior: SnackBarBehavior.floating,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Sign in failed: ${e.toString()}",
+          isError: true,
         );
       }
     } finally {
@@ -112,7 +110,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     .textTheme
                     .bodyLarge
                     ?.color
-                    ?.withValues(alpha: 0.7),
+                    ?.withOpacity(0.7),
               ),
           textAlign: TextAlign.center,
         )
@@ -173,17 +171,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _handleGuestLogin() async {
     setState(() => _isLoading = true);
     try {
-      final authService = ref.read(authServiceProvider);
-      await authService.signInAnonymously();
-      // Successful login will update the authStateProvider
+      // Offline mode: update guest state AND persist session type.
+      // This uses the updated AuthService.signInAnonymously which is now offline-safe.
+      await ref.read(authServiceProvider).signInAnonymously();
+      ref.read(isGuestProvider.notifier).setGuestMode(true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Guest login failed: ${e.toString()}"),
-            backgroundColor: AppTheme.pastelRed,
-            behavior: SnackBarBehavior.floating,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Guest login failed: ${e.toString()}",
+          isError: true,
         );
       }
     } finally {

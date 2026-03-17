@@ -484,18 +484,31 @@ class NotificationService {
             "Handled notification action: ${response.actionId} for $subjectId");
 
         // Notify Background Service execution isolate about the manual update
-        // to prevent race condition where background loop overwrites new status with old pending status
-        // Notify Background Service execution isolate about the manual update
         try {
-          final service = FlutterBackgroundService();
-          if (await service.isRunning()) {
-            service.invoke("manual_status_update", {
+          final SendPort? bgPort =
+              IsolateNameServer.lookupPortByName('madbunky_bg_service');
+          if (bgPort != null) {
+            bgPort.send({
               "sessionId": resolvedSessionId,
               "statusIndex": newStatus.index,
             });
-            debugPrint("Invoked 'manual_status_update' for $resolvedSessionId");
+            debugPrint("Sent manual_status_update to BG Port");
           } else {
-            debugPrint("Service not running, skipping invoke.");
+            // Fallback: If bgPort is null, we might be in the main isolate 
+            // where FlutterBackgroundService() is available.
+            try {
+              final service = FlutterBackgroundService();
+              if (await service.isRunning()) {
+                service.invoke("manual_status_update", {
+                  "sessionId": resolvedSessionId,
+                  "statusIndex": newStatus.index,
+                });
+              }
+            } catch (_) {
+              // We are likely in a background isolate where the plugin singleton is restricted.
+              // Since the port lookup also failed, we just skip the signal.
+              // The update is already persisted in SharedPreferences.
+            }
           }
         } catch (e) {
           debugPrint("Failed to invoke background update: $e");

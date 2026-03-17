@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import '../utils/morph_dialog.dart';
+import 'attendance_indicator.dart';
 
 class FolderInfoSheet extends StatefulWidget {
   final Group group;
@@ -67,21 +68,32 @@ class _FolderInfoSheetState extends State<FolderInfoSheet> {
     return GlassDialogContainer(
       title: widget.group.name,
       actions: [
-        TextButton(
+        OutlinedButton(
           onPressed: () => Navigator.pop(context),
+          style: OutlinedButton.styleFrom(
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12),
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
           child: Text(
             "Close",
             style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
       ],
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // 1. Header Stats (Overall % + Trend Graph)
           Container(
             height: 220,
@@ -146,14 +158,13 @@ class _FolderInfoSheetState extends State<FolderInfoSheet> {
                                   : AppTheme.pastelRed)
                               .withValues(alpha: 0.1),
                           shape: BoxShape.circle),
-                      child: Icon(
-                        overallPct >= 75
-                            ? Icons.health_and_safety
-                            : Icons.warning_amber_rounded,
+                      child: CircularAttendanceIndicator(
+                        percentage: overallPct,
+                        target: 75.0, // Assuming a default target of 75% for overall health
                         color: overallPct >= 75
                             ? AppTheme.pastelGreen
                             : AppTheme.pastelRed,
-                        size: 24,
+                        size: 64,
                       ),
                     )
                   ],
@@ -208,9 +219,9 @@ class _FolderInfoSheetState extends State<FolderInfoSheet> {
           const SizedBox(height: 12),
 
           // 3. Subject List
-          SizedBox(
-            height: 200, // Fixed height scrollable
+          Flexible(
             child: ListView.separated(
+              shrinkWrap: true,
               physics: const BouncingScrollPhysics(),
               itemCount: sortedSubjects.length,
               separatorBuilder: (c, i) => const SizedBox(height: 12),
@@ -222,8 +233,9 @@ class _FolderInfoSheetState extends State<FolderInfoSheet> {
           )
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildHighlightCard(BuildContext context, String title, String name,
       String value, Color color, IconData icon) {
@@ -424,6 +436,8 @@ class _FolderTrendChart extends StatelessWidget {
                 ],
                 lineTouchData: LineTouchData(
                     touchTooltipData: LineTouchTooltipData(
+                        fitInsideHorizontally: true,
+                        fitInsideVertically: true,
                         getTooltipColor: (_) =>
                             Colors.black.withValues(alpha: 0.8),
                         getTooltipItems: (touchedSpots) {

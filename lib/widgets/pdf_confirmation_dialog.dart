@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mad_bunky/models/models.dart';
 import '../services/log_service.dart';
-// Note: We are checking if GlassDialogContainer is needed.
-// For this robust redesign, we will build the decoration locally
-// to ensure we control the constraints perfectly.
+import '../utils/morph_dialog.dart';
 
 class PdfConfirmationDialog extends StatefulWidget {
   final List<ClassSession> extractedSessions;
@@ -351,9 +349,11 @@ class _PdfConfirmationDialogState extends State<PdfConfirmationDialog> {
                               } catch (e, stack) {
                                 debugPrint("Import Error: $e\n$stack");
                                 LogService().error("Import Error: $e", stack);
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                    content: Text(
-                                        "Error: $e\n${stack.toString().split('\n').first}")));
+                                showMorphSnackBar(
+                                  context,
+                                  message: "Error: $e",
+                                  isError: true,
+                                );
                               }
                             },
                             style: FilledButton.styleFrom(

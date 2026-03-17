@@ -26,7 +26,6 @@ import 'package:mad_bunky/widgets/premium_account_card.dart'; // Using package i
 // Let's use relative for premium account to be safe:
 
 import '../widgets/morphing_widget.dart';
-import '../widgets/glass_color_picker_dialog.dart';
 import '../utils/morph_dialog.dart';
 
 import '../services/log_service.dart';
@@ -264,7 +263,7 @@ class SettingsScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
 
                 // New Theme Preset Selector
-                // [ Default | System | Custom ]
+                // [ Default | System ]
                 Container(
                   height: 50,
                   margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -280,13 +279,10 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final width = constraints.maxWidth / 3;
+                      final width = constraints.maxWidth / 2;
                       int selectedIndex = 0;
                       if (settings.themePreset == ThemePreset.system) {
                         selectedIndex = 1;
-                      }
-                      if (settings.themePreset == ThemePreset.custom) {
-                        selectedIndex = 2;
                       }
 
                       return Stack(
@@ -335,43 +331,6 @@ class SettingsScreen extends ConsumerWidget {
                                 selectedIndex,
                                 () => notifier
                                     .updateThemePreset(ThemePreset.system),
-                              ),
-                              _buildNewPresetOption(
-                                context,
-                                "Custom",
-                                2,
-                                selectedIndex,
-                                () async {
-                                  // If already custom, show picker
-                                  // If switching to custom, update AND show picker
-                                  if (settings.themePreset !=
-                                      ThemePreset.custom) {
-                                    await notifier
-                                        .updateThemePreset(ThemePreset.custom);
-                                  }
-                                  // Show Color Picker
-                                  if (context.mounted) {
-                                    final currentColor = Color(
-                                        settings.customThemeColor ??
-                                            0xFF6750A4);
-                                    showMorphDialog(
-                                      context: context,
-                                      builder: (ctx) => GlassColorPickerDialog(
-                                        initialColor: currentColor,
-                                        initialIsNeon: settings.isNeon, // Added
-                                        onColorChanged: (c) {
-                                          notifier.setCustomThemeColor(c);
-                                        },
-                                        onNeonChanged: (val) {
-                                          notifier.toggleNeon(val);
-                                        }, // Added
-                                      ),
-                                    );
-                                  }
-                                },
-                                isCustom: true,
-                                customColor: Color(
-                                    settings.customThemeColor ?? 0xFF6750A4),
                               ),
                             ],
                           ),

@@ -36,24 +36,17 @@ class _BackupSettingsSectionState extends ConsumerState<BackupSettingsSection> {
           .read(sharedPreferencesProvider)
           .setString('lastBackupTime', DateTime.now().toIso8601String());
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Backup Successful!"),
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            backgroundColor: Colors.green,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Backup Successful!",
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Backup Failed: $e"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Backup Failed: $e",
+          isError: true,
         );
       }
     } finally {
@@ -119,20 +112,18 @@ class _BackupSettingsSectionState extends ConsumerState<BackupSettingsSection> {
       // For now, prompt user to restart or try to update state if possible.
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Restore Complete! Please restart the app."),
-            backgroundColor: Colors.green,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Restore Complete! Please restart the app.",
+          icon: Icons.restart_alt_rounded,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Restore Failed: $e"),
-            backgroundColor: Colors.red,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Restore Failed: $e",
+          isError: true,
         );
       }
     } finally {

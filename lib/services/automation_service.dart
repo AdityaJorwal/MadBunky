@@ -23,6 +23,10 @@ class AutomationService {
 
   Future<void> _init() async {
     // 1. Initialize Background Service System
+    if (kDebugMode) {
+      // Delay to prevent Android Studio debugger disconnect/crash on startup
+      await Future.delayed(const Duration(seconds: 3));
+    }
     await MadBackgroundService.initialize();
 
     // 2. Initial Sync & Start/Stop based on current settings

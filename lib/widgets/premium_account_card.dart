@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../providers/providers.dart';
 import '../utils/morph_dialog.dart';
-
+import '../models/models.dart';
 import '../widgets/google_calendar_import_dialog.dart';
+import '../widgets/pdf_confirmation_dialog.dart';
 
 class PremiumAccountCard extends ConsumerStatefulWidget {
   const PremiumAccountCard({super.key});
@@ -18,6 +19,7 @@ class PremiumAccountCard extends ConsumerStatefulWidget {
 class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
   bool _isBackingUp = false;
   bool _isRestoring = false;
+  bool _isSyncing = false;
 
   String _formatDate(String? iso) {
     if (iso == null) return "Never";
@@ -37,24 +39,17 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
           .read(sharedPreferencesProvider)
           .setString('lastBackupTime', DateTime.now().toIso8601String());
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("Backup Successful!"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.green,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Backup Successful!",
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Backup Failed: $e"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Backup Failed: $e",
+          isError: true,
         );
       }
     } finally {
@@ -102,21 +97,18 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
       await ref.read(attendanceProvider.notifier).reload();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text("Restore Complete! Please restart to apply all settings."),
-            backgroundColor: Colors.green,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Restore Complete! Please restart to apply all settings.",
+          icon: Icons.restart_alt_rounded,
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Restore Failed: $e"),
-            backgroundColor: Colors.red,
-          ),
+        showMorphSnackBar(
+          context,
+          message: "Restore Failed: $e",
+          isError: true,
         );
       }
     } finally {
@@ -124,17 +116,63 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
     }
   }
 
+  Future<void> _syncCalendarNow() async {
+    if (_isSyncing) return;
+    setState(() => _isSyncing = true);
+    try {
+      final service = ref.read(googleCalendarServiceProvider);
+      final account = service.currentUser;
+      if (account == null) {
+        showMorphSnackBar(context,
+            message: "Please sign in to sync schedule", isError: true);
+        return;
+      }
+
+      // Sync Next Week
+      final now = DateTime.now();
+      final nextWeekStart = now.add(Duration(days: 8 - now.weekday));
+
+      final sessions = await service.fetchEventsForWeek(nextWeekStart);
+      if (sessions.isNotEmpty && mounted) {
+        final notifier = ref.read(attendanceProvider.notifier);
+        for (var session in sessions) {
+          notifier.addClassSession(session);
+        }
+        showMorphSnackBar(context,
+            message: "Auto-synced ${sessions.length} classes for next week");
+      } else if (mounted) {
+        showMorphSnackBar(context, message: "No events found for next week.");
+      }
+    } catch (e) {
+      if (mounted) {
+        showMorphSnackBar(context, message: "Sync Failed: $e", isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
+    }
+  }
+
+  void _handleToggleScheduleSync(bool value) async {
+    final notifier = ref.read(settingsProvider.notifier);
+    await notifier.toggleAutoSyncGoogleCalendar(value);
+    if (value && mounted) {
+      _syncCalendarNow();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final googleAccountAsync = ref.watch(userGoogleAccountProvider);
-    final authUser = ref.watch(authStateProvider).value;
+// Removed authUser variable
+    final isGuest = ref.watch(isGuestProvider);
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
 
+// ... keeping rest same until the widget building part, but replaced target block carefully
+
     // Auth State
-    final isGuest = authUser?.isAnonymous ?? false;
     final googleUser = googleAccountAsync.value;
 
     final String displayName =
@@ -256,7 +294,7 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
                     label: "Schedule Sync",
                     subLabel: "Auto-import next week",
                     value: settings.autoSyncGoogleCalendar,
-                    onChanged: (v) => notifier.toggleAutoSyncGoogleCalendar(v),
+                    onChanged: _handleToggleScheduleSync,
                     icon: Icons.calendar_month,
                     isDark: isDark,
                     textColor: textColor,
@@ -286,15 +324,46 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () {
+                onPressed: () async {
                   HapticFeedback.mediumImpact();
-                  showMorphDialog(
+                  final result = await showMorphDialog(
                     context: context,
                     builder: (context) => const GoogleCalendarImportDialog(),
                   );
+
+                  if (result != null && result is Map && mounted) {
+                    final sessions = result['sessions'] as List<ClassSession>;
+                    final range = result['range'] as String;
+                    final startOfWeek = result['startOfWeek'] as DateTime;
+
+                    showMorphDialog(
+                      context: context,
+                      builder: (c) => PdfConfirmationDialog(
+                        extractedSessions: sessions,
+                        instituteName: "Google Calendar",
+                        dateRange: range,
+                        showSaveOption: false,
+                        initialDate: startOfWeek,
+                        onConfirm: (confirmedSessions, selectedDate, _) {
+                          final notifier = ref.read(attendanceProvider.notifier);
+                          for (var session in confirmedSessions) {
+                            notifier.addClassSession(session);
+                          }
+                          if (mounted) {
+                            showMorphSnackBar(
+                              context,
+                              message:
+                                  "Imported ${confirmedSessions.length} classes from Calendar",
+                            );
+                          }
+                        },
+                      ),
+                    );
+                  }
                 },
-                icon: const Icon(Icons.download_rounded, size: 20),
-                label: const Text("Import Schedule"),
+                icon: Icon(_isSyncing ? Icons.refresh : Icons.download_rounded,
+                    size: 20),
+                label: Text(_isSyncing ? "Syncing..." : "Import Schedule"),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: textColor,
                   side: BorderSide(
@@ -385,8 +454,9 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () {
-                  ref.read(authServiceProvider).signInWithGoogle();
+                onPressed: () async {
+                  await ref.read(authServiceProvider).signInWithGoogle();
+                  ref.read(isGuestProvider.notifier).setGuestMode(false);
                 },
                 icon: const Icon(Icons.login),
                 label: const Text("Sign In with Google"),
@@ -451,50 +521,59 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
     required Color textColor,
     required Color mutedTextColor,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.black.withValues(alpha: 0.03),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: value
-                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
-                : Colors.transparent),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Icon(icon,
-                  size: 20,
-                  color: value
-                      ? Theme.of(context).colorScheme.primary
-                      : mutedTextColor),
-              SizedBox(
-                height: 24,
-                width: 36,
-                child: Switch.adaptive(
-                  value: value,
-                  onChanged: (v) {
-                    HapticFeedback.lightImpact();
-                    onChanged(v);
-                  },
-                  padding: EdgeInsets.zero,
+    return InkWell(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onChanged(!value);
+      },
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+        decoration: BoxDecoration(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.black.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: value
+                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.5)
+                  : Colors.transparent),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Icon(icon,
+                    size: 20,
+                    color: value
+                        ? Theme.of(context).colorScheme.primary
+                        : mutedTextColor),
+                SizedBox(
+                  height: 24,
+                  width: 36,
+                  child: Switch.adaptive(
+                    value: value,
+                    onChanged: (v) {
+                      HapticFeedback.lightImpact();
+                      onChanged(v);
+                    },
+                    padding: EdgeInsets.zero,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(label,
-              style: GoogleFonts.outfit(
-                  fontWeight: FontWeight.bold, color: textColor, fontSize: 13)),
-          Text(subLabel,
-              style: GoogleFonts.outfit(color: mutedTextColor, fontSize: 10)),
-        ],
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(label,
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    fontSize: 13)),
+            Text(subLabel,
+                style: GoogleFonts.outfit(color: mutedTextColor, fontSize: 10)),
+          ],
+        ),
       ),
     );
   }
