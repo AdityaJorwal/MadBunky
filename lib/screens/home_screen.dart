@@ -44,7 +44,6 @@ import '../widgets/subject_info_sheet.dart'; // Restored
 import '../widgets/attendance_indicator.dart'; // Add this import
 
 import '../widgets/folder_info_sheet.dart';
-// Added Import
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -233,30 +232,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     final service = ref.read(googleCalendarServiceProvider);
 
-    // Attempt silent sign-in if needed, or just check if already signed in
-    // If we are not signed in, we probably shouldn't prompt the user immediately on launch
-    // unless they explicitly enabled this setting. But silent sign-in is safe.
     var account = service.currentUser;
     account ??= await service.silentSignIn();
 
     if (account != null) {
-      // Sync Next Week
       try {
-        // Calculate start of NEXT week (or current week? User said "next week" in toggle label)
-        // Toggle label: "Auto-sync next week". So we sync next week.
-        // Logic: Get current date, find next Monday.
         final now = DateTime.now();
-        final nextWeekStart =
-            now.add(Duration(days: 8 - now.weekday)); // Next Monday
+        // Start of CURRENT week (Monday)
+        final currentWeekStart =
+            now.subtract(Duration(days: now.weekday - 1));
+        final currentWeekStartDate = DateTime(
+            currentWeekStart.year, currentWeekStart.month, currentWeekStart.day);
+        // Start of NEXT week (next Monday)
+        final nextWeekStart = currentWeekStartDate.add(const Duration(days: 7));
 
-        final sessions = await service.fetchEventsForWeek(nextWeekStart);
-        if (sessions.isNotEmpty) {
+        // Fetch both current week and next week
+        final currentSessions =
+            await service.fetchEventsForWeek(currentWeekStartDate);
+        final nextSessions =
+            await service.fetchEventsForWeek(nextWeekStart);
+
+        final allSessions = [...currentSessions, ...nextSessions];
+
+        if (allSessions.isNotEmpty) {
           final notifier = ref.read(attendanceProvider.notifier);
           int addedCount = 0;
-          for (var session in sessions) {
-            // We might want to avoid duplicates here?
-            // Ideally the notifier handles it or we just add them.
-            // For now, simpler is better as per instructions.
+          for (var session in allSessions) {
             notifier.addClassSession(session);
             addedCount++;
           }
@@ -549,68 +550,74 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     // Fix: Increase threshold for 3 columns to prevent narrow cards on landscape phones
                     final crossAxisCount = constraints.maxWidth > 1100 ? 3 : 2;
                     // Dynamic aspect ratio: Target height ~220-250px
-                    // Masonry Layout for Variable Heights (Folders)
-                    // Distribute items into columns
-                    List<List<Widget>> columns =
-                        List.generate(crossAxisCount, (_) => []);
-                    for (int i = 0; i < allItems.length; i++) {
-                      final item = allItems[i];
-                      Widget child;
-                      if (item is Group) {
-                        child = _GroupCard(
-                          key:
-                              _itemKeys.putIfAbsent(item.id, () => GlobalKey()),
-                          group: item,
-                          isMultiSelect: isMultiSelect,
-                          searchQuery: query,
-                          itemKeys: _itemKeys,
-                        );
-                      } else {
-                        child = SubjectCard(
-                          key: _itemKeys.putIfAbsent(
-                              (item as Subject).id, () => GlobalKey()),
-                          subject: item,
-                          isMultiSelect: isMultiSelect,
-                        );
-                      }
+                    // Grid Layout for Variable Heights (Folders)
+                    // Distribute items into rows
+                    List<Widget> gridRows = [];
+                    for (int i = 0; i < allItems.length; i += crossAxisCount) {
+                      List<Widget> rowChildren = [];
+                      for (int j = 0; j < crossAxisCount; j++) {
+                        int index = i + j;
+                        if (index < allItems.length) {
+                          final item = allItems[index];
+                          Widget child;
+                          if (item is Group) {
+                            child = _GroupCard(
+                              key: _itemKeys.putIfAbsent(item.id, () => GlobalKey()),
+                              group: item,
+                              isMultiSelect: isMultiSelect,
+                              searchQuery: query,
+                              itemKeys: _itemKeys,
+                            );
+                          } else {
+                            final subjectItem = item as Subject;
+                            child = SubjectCard(
+                              key: _itemKeys.putIfAbsent(subjectItem.id, () => GlobalKey()),
+                              subject: subjectItem,
+                              isMultiSelect: isMultiSelect,
+                            );
+                          }
 
-                      final id = item is Group ? item.id : (item as Subject).id;
-                      // Wrap in Reorder Switcher
-                      final switcher = _ReorderAnimatedSwitcher(
-                        event: ref.watch(lastReorderEventProvider),
-                        child: KeyedSubtree(
-                          key: ValueKey(id),
-                          child: child,
-                        ),
-                      );
-
-                      // Apply Animation
-                      final animatedChild =
-                          AnimationConfiguration.staggeredList(
-                        position: i,
-                        duration: const Duration(milliseconds: 375),
-                        child: ScaleAnimation(
-                          child: FadeInAnimation(
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: switcher,
+                          final id = item is Group ? item.id : (item as Subject).id;
+                          // Wrap in Reorder Switcher
+                          final switcher = _ReorderAnimatedSwitcher(
+                            event: ref.watch(lastReorderEventProvider),
+                            child: KeyedSubtree(
+                              key: ValueKey(id),
+                              child: child,
                             ),
-                          ),
-                        ),
-                      );
+                          );
 
-                      if (crossAxisCount == 3 && filteredGroups.isNotEmpty) {
-                        if (item is Group) {
-                          columns[0].add(animatedChild);
+                          // Apply Animation
+                          final animatedChild = AnimationConfiguration.staggeredList(
+                            position: index,
+                            duration: const Duration(milliseconds: 375),
+                            child: ScaleAnimation(
+                              child: FadeInAnimation(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: switcher,
+                                ),
+                              ),
+                            ),
+                          );
+
+                          rowChildren.add(Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                left: j == 0 ? 0 : 8,
+                                right: j == crossAxisCount - 1 ? 0 : 8,
+                              ),
+                              child: animatedChild,
+                            ),
+                          ));
                         } else {
-                          // Distribute subjects between middle and right columns
-                          // Since allItems has Groups first then Subjects
-                          final subjectIndex = i - filteredGroups.length;
-                          columns[1 + (subjectIndex % 2)].add(animatedChild);
+                          rowChildren.add(Expanded(child: const SizedBox.shrink()));
                         }
-                      } else {
-                        columns[i % crossAxisCount].add(animatedChild);
                       }
+                      gridRows.add(Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: rowChildren,
+                      ));
                     }
 
                     return AnimationLimiter(
@@ -624,29 +631,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         physics: const AlwaysScrollableScrollPhysics(
                             parent: BouncingScrollPhysics()),
                         child: Column(
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: columns.asMap().entries.map((entry) {
-                                final index = entry.key;
-                                final colItems = entry.value;
-                                return Expanded(
-                                  child: Padding(
-                                    padding: EdgeInsets.only(
-                                      left: index == 0 ? 0 : 8,
-                                      right:
-                                          index == crossAxisCount - 1 ? 0 : 8,
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: colItems,
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ],
+                          children: gridRows,
                         ),
                       ),
                     );
@@ -674,7 +659,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               return (a as dynamic).id == (b as dynamic).id;
                             },
                             itemBuilder: (context, animation, item, index) {
-                              final child = (item is Group
+                              final child = item is Group
                                   ? _GroupCard(
                                       key: _itemKeys.putIfAbsent(
                                           item.id, () => GlobalKey()),
@@ -689,7 +674,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                           () => GlobalKey()),
                                       subject: item,
                                       isMultiSelect: isMultiSelect,
-                                    ));
+                                    );
 
                               final id = item is Group
                                   ? item.id
@@ -708,7 +693,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             removeItemBuilder: (context, animation, item) {
                               return MorphItemTransition(
                                 animation: animation,
-                                child: (item is Group
+                                child: item is Group
                                     ? _GroupCard(
                                         group: item,
                                         isMultiSelect: isMultiSelect,
@@ -716,7 +701,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       )
                                     : SubjectCard(
                                         subject: item as Subject,
-                                        isMultiSelect: isMultiSelect)),
+                                        isMultiSelect: isMultiSelect),
                               );
                             },
                           ),
@@ -2003,7 +1988,7 @@ class _SubjectCardState extends ConsumerState<SubjectCard> {
                                 ),
                               ),
                             Text(
-                                "Current: ${widget.subject.currentPercentage.toStringAsFixed(1)}% | Target: ${widget.subject.targetPercentage}%",
+                                "Target: ${widget.subject.targetPercentage}%",
                                 style: TextStyle(
                                     color: theme.colorScheme.onSurfaceVariant,
                                     fontSize: 12)),

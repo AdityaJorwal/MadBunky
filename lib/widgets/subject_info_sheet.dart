@@ -92,14 +92,6 @@ class _SubjectInfoSheetState extends ConsumerState<SubjectInfoSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Current: ${subject.currentPercentage.toStringAsFixed(1)}%",
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
                           "Target: ${subject.targetPercentage}%",
                           style: GoogleFonts.outfit(
                             fontSize: 12,

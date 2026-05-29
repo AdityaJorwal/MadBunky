@@ -481,6 +481,9 @@ class AppSettings {
   final bool enableBatterySaver; // New: Battery Saver Mode
   final bool isNeon; // Added: Neon Mode Flag
   final bool enableAutoBackup; // Added: Auto Backup Flag
+  final String geminiModel;
+  final bool enableGeminiAI;
+  final String geminiCustomPrompt;
 
   // Refactored for Multiple Support
   final List<String> campusSsids;
@@ -498,7 +501,7 @@ class AppSettings {
 
   AppSettings({
     this.themeMode = ThemeType.system,
-    this.themePreset = ThemePreset.defaultGray,
+    this.themePreset = ThemePreset.system,
     this.useMaterialYou = true,
     this.showCalendar = true,
     this.enableNotifications = true,
@@ -518,6 +521,9 @@ class AppSettings {
     this.campusLocations = const [],
     this.customThemeColor,
     this.enableAutoBackup = false, // Added
+      this.geminiModel = 'gemini-3.1-flash-lite',
+    this.enableGeminiAI = true,
+    this.geminiCustomPrompt = '',
   });
 
   AppSettings copyWith({
@@ -542,6 +548,9 @@ class AppSettings {
     bool? autoSyncGoogleCalendar, // Added
     bool? isNeon, // Added
     bool? enableAutoBackup, // Added
+    String? geminiModel,
+    bool? enableGeminiAI,
+    String? geminiCustomPrompt,
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
@@ -565,6 +574,9 @@ class AppSettings {
       enableBatterySaver: enableBatterySaver ??
           this.enableBatterySaver, // Fixed: Added missing field
       isNeon: isNeon ?? this.isNeon, // Fixed: Added missing field
+      geminiModel: geminiModel ?? this.geminiModel,
+      enableGeminiAI: enableGeminiAI ?? this.enableGeminiAI,
+      geminiCustomPrompt: geminiCustomPrompt ?? this.geminiCustomPrompt,
     );
   }
 
@@ -590,11 +602,16 @@ class AppSettings {
         'enableBatterySaver': enableBatterySaver,
         'isNeon': isNeon, // Added
         'enableAutoBackup': enableAutoBackup, // Added
+        'geminiModel': geminiModel,
+        'enableGeminiAI': enableGeminiAI,
+        'geminiCustomPrompt': geminiCustomPrompt,
       };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
         themeMode: ThemeType.values[json['themeMode'] ?? 0],
-        themePreset: ThemePreset.values[json['themePreset'] ?? 0],
+        themePreset: (json['themePreset'] != null && (json['themePreset'] as int) < ThemePreset.values.length)
+            ? ThemePreset.values[json['themePreset'] as int]
+            : ThemePreset.system,
         useMaterialYou: json['useMaterialYou'] ?? true,
         showCalendar: json['showCalendar'] ?? true,
         enableNotifications: json['enableNotifications'] ?? true,
@@ -615,6 +632,9 @@ class AppSettings {
         enableBatterySaver:
             json['enableBatterySaver'] ?? false, // Fixed: Added missing field
         isNeon: json['isNeon'] ?? false, // Fixed: Added missing field
+        geminiModel: json['geminiModel'] ?? 'gemini-3.1-flash-lite',
+        enableGeminiAI: json['enableGeminiAI'] ?? true,
+        geminiCustomPrompt: json['geminiCustomPrompt'] ?? '',
       );
 }
 

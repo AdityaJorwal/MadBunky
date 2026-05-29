@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-enum ThemePreset { defaultGray, system, custom, pastel, cyberpunk, amoled }
+enum ThemePreset { defaultGray, system }
 
 class AppTheme {
   // Premium Silver/Gray Palette (Default)
@@ -34,7 +34,7 @@ class AppTheme {
   static TextTheme get _textTheme => GoogleFonts.outfitTextTheme();
 
   static ThemeData lightTheme(ColorScheme? dynamicColorScheme,
-      {ThemePreset preset = ThemePreset.defaultGray,
+      {ThemePreset preset = ThemePreset.system,
       Color? customThemeColor,
       bool isNeon = false}) {
     ColorScheme baseScheme;
@@ -48,34 +48,6 @@ class AppTheme {
       // If the incoming system theme is Grey/Neutral, strictly remove generated tints
       if (_isGrey(baseScheme.primary)) {
         baseScheme = _makeMonochrome(baseScheme);
-      }
-    } else if (preset == ThemePreset.custom) {
-      final seed = customThemeColor ?? defaultCustomColor;
-
-      // Neon Mode Override for Custom Preset
-      if (isNeon) {
-        // Return a dark theme masquerading as light logic request, or force baseScheme to be dark
-        // Since this is 'lightTheme' method but neon is inherently dark, we should probably redirect or force dark colors.
-        // However, correct approach is to construct a High Contrast Dark scheme.
-        baseScheme = ColorScheme.fromSeed(
-          seedColor: seed,
-          brightness: Brightness.dark, // Neon is always dark
-          surface: Colors.black,
-          onSurface: Colors.white,
-          surfaceContainer: const Color(0xFF0A0A0A), // Near Black
-        ).copyWith(
-          primary: seed, // Force the neon color
-          secondary: seed,
-          tertiary: Colors.white,
-        );
-      } else {
-        baseScheme = ColorScheme.fromSeed(
-          seedColor: seed,
-          brightness: Brightness.light,
-        );
-        if (_isGrey(seed)) {
-          baseScheme = _makeMonochrome(baseScheme);
-        }
       }
     } else {
       // Default Gray - Strict Monochromatic Calibration to prevent Teal drift
@@ -158,35 +130,6 @@ class AppTheme {
       // If the incoming system theme is Grey/Neutral, strictly remove generated tints
       if (_isGrey(baseScheme.primary)) {
         baseScheme = _makeMonochrome(baseScheme);
-      }
-    } else if (preset == ThemePreset.custom) {
-      final seed = customThemeColor ?? defaultCustomColor;
-
-      if (isNeon) {
-        // High Contrast Neon Scheme
-        baseScheme = ColorScheme.fromSeed(
-          seedColor: seed,
-          brightness: Brightness.dark,
-          surface: Colors.black, // Pure Black
-          onSurface: Colors.white,
-          surfaceContainer: const Color(0xFF050505), // Almost Black
-        ).copyWith(
-          primary: seed,
-          onPrimary:
-              seed.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-          primaryContainer: seed.withValues(alpha: 0.2),
-          onPrimaryContainer: seed,
-          secondary: seed, // Monotone Neon
-          secondaryContainer: seed.withValues(alpha: 0.1),
-        );
-      } else {
-        baseScheme = ColorScheme.fromSeed(
-          seedColor: seed,
-          brightness: Brightness.dark,
-        );
-        if (_isGrey(seed)) {
-          baseScheme = _makeMonochrome(baseScheme);
-        }
       }
     } else {
       // Default Gray Dark - Strict Monochromatic Calibration

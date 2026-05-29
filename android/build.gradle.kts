@@ -10,6 +10,21 @@ allprojects {
         maven { url = uri("https://repo1.maven.org/maven2") }
         mavenCentral()
     }
+
+    // Force glance-appwidget to a stable version compatible with compileSdk 36 / AGP 8.9.1.
+    // home_widget 0.8.x pulls in glance-appwidget:1.3.0-alpha01 which requires compileSdk 37
+    // and AGP 9.1.0+. Pinning to 1.1.0 (stable) avoids that requirement.
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.glance:glance-appwidget:1.1.0")
+            force("androidx.glance:glance:1.1.0")
+            force("androidx.glance:glance-material3:1.1.0")
+            force("androidx.glance:glance-material:1.1.0")
+        }
+        // Exclude the alpha remote-creation-android dependency entirely —
+        // it is pulled transitively by glance 1.3.0-alpha01 and is not needed.
+        exclude(group = "androidx.compose.remote", module = "remote-creation-android")
+    }
 }
 
 val newBuildDir: Directory =

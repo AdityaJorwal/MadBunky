@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../providers/providers.dart';
+import '../services/gemini_service.dart';
+import '../widgets/pdf_confirmation_dialog.dart';
 
 import 'main_scaffold.dart';
 import '../services/document_scanner_service.dart';
@@ -218,6 +220,73 @@ class _TimetableScanScreenState extends ConsumerState<TimetableScanScreen> {
     }
   }
 
+  Future<void> _extractClassesWithAI() async {
+    if (_imageFile == null) return;
+
+    final settings = ref.read(settingsProvider);
+    final apiKey = await GeminiService.instance.getApiKey();
+
+    if (!mounted) return;
+
+    if (apiKey == null || apiKey.isEmpty) {
+      MainScaffold.showGlassToast(context, "Gemini API Key is not set in Settings.", isError: true);
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final mimeType = _imageFile!.path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      final subjects = ref.read(attendanceProvider).subjects;
+
+      final extractedSessions = await GeminiService.instance.extractSchedule(
+        file: _imageFile!,
+        mimeType: mimeType,
+        apiKey: apiKey,
+        modelName: settings.geminiModel,
+        existingSubjects: subjects,
+        customPrompt: settings.geminiCustomPrompt,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (extractedSessions.isEmpty) {
+        MainScaffold.showGlassToast(context, "No classes could be extracted.", isError: true);
+        return;
+      }
+
+      // Launch PdfConfirmationDialog
+      showMorphDialog(
+        context: context,
+        builder: (c) => PdfConfirmationDialog(
+          extractedSessions: extractedSessions,
+          initialDate: DateTime.now(),
+          instituteName: "Gemini AI",
+          showSaveOption: false,
+          onConfirm: (confirmedSessions, selectedDate, _) {
+            final notifier = ref.read(attendanceProvider.notifier);
+            for (var session in confirmedSessions) {
+              notifier.addClassSession(session);
+            }
+            if (mounted) {
+              MainScaffold.showGlassToast(
+                context,
+                "Imported ${confirmedSessions.length} classes using Gemini!",
+              );
+              Navigator.pop(context); // Close the scanner screen too
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        MainScaffold.showGlassToast(context, "AI extraction failed: $e", isError: true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -344,17 +413,50 @@ class _TimetableScanScreenState extends ConsumerState<TimetableScanScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _setAsSchedule,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: const Text("Set as Schedule Reference"),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.all(16),
-                  ),
-                ),
-              ),
+              (() {
+                final settings = ref.watch(settingsProvider);
+                if (settings.enableGeminiAI) {
+                  return Column(
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _extractClassesWithAI,
+                          icon: const Icon(Icons.auto_awesome),
+                          label: const Text("Extract Classes (AI)"),
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _setAsSchedule,
+                          icon: const Icon(Icons.photo_library_outlined),
+                          label: const Text("Set as Schedule Reference"),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.all(16),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  return SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: _setAsSchedule,
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text("Set as Schedule Reference"),
+                      style: FilledButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                      ),
+                    ),
+                  );
+                }
+              })(),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () {

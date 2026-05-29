@@ -21,7 +21,8 @@ import '../utils/morph_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 // import '../services/pdf_scheduler_service.dart'; // Removed
 // import '../widgets/pdf_processing_dialog.dart'; // Removed
-// import '../widgets/pdf_confirmation_dialog.dart'; // Removed
+import '../widgets/pdf_confirmation_dialog.dart'; 
+import '../services/gemini_service.dart';
 // import '../widgets/pdf_preview_dialog.dart'; // Removed
 // import '../widgets/batch_selection_dialog.dart'; // Removed
 // import '../widgets/scan_options_dialog.dart'; // Removed
@@ -256,6 +257,10 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
         case CalendarMenuAction.import:
           _handleImportWeekSchedule();
           break;
+        case CalendarMenuAction.importGoogleCalendar:
+          // Direct Google Calendar import — skip the choice dialog
+          Future.microtask(() => _importFromGoogleCalendar());
+          break;
         case CalendarMenuAction.restoreBackup:
           _handleImportWeekSchedule();
           break;
@@ -428,11 +433,46 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
     );
   }
 
-  void _importFromGoogleCalendar() {
-    showMorphDialog(
+  void _importFromGoogleCalendar() async {
+    // Use a small delay so any previously dismissed dialog route has fully settled
+    // before we push the next dialog onto the navigator stack.
+    final result = await showMorphDialog(
       context: context,
       builder: (ctx) => const GoogleCalendarImportDialog(),
     );
+
+    if (result != null && result is Map && mounted) {
+      final sessions = result['sessions'] as List<ClassSession>;
+      final range = result['range'] as String;
+      final startOfWeek = result['startOfWeek'] as DateTime;
+
+      // Small frame delay ensures clean navigator state before pushing next dialog
+      await Future.delayed(Duration.zero);
+      if (!mounted) return;
+
+      showMorphDialog(
+        context: context,
+        builder: (c) => PdfConfirmationDialog(
+          extractedSessions: sessions,
+          instituteName: "Google Calendar",
+          dateRange: range,
+          showSaveOption: false,
+          initialDate: startOfWeek,
+          onConfirm: (confirmedSessions, selectedDate, _) {
+            final notifier = ref.read(attendanceProvider.notifier);
+            for (var session in confirmedSessions) {
+              notifier.addClassSession(session);
+            }
+            if (mounted) {
+              MainScaffold.showGlassToast(
+                context,
+                "Imported ${confirmedSessions.length} classes from Calendar",
+              );
+            }
+          },
+        ),
+      );
+    }
   }
 
   void _importFromBackup() async {
@@ -489,6 +529,126 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
   }
 
   Future<void> _processFileSimple(String filePath) async {
+    final settings = ref.read(settingsProvider);
+    final apiKey = await GeminiService.instance.getApiKey();
+    if (!mounted) return;
+    final bool useGemini = settings.enableGeminiAI && apiKey != null && apiKey.isNotEmpty;
+
+    if (useGemini) {
+      // Show glass choice dialog
+      final bool? shouldExtract = await showMorphDialog<bool>(
+        context: context,
+        builder: (ctx) => GlassDialogContainer(
+          title: "Schedule Scanned",
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false), // Save as photo
+              child: const Text("Save as Photo"),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true), // Extract
+              child: const Text("Extract Classes (AI)"),
+            ),
+          ],
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(
+              "Would you like to extract classes, times, and dates from this schedule using Gemini AI, or save it as a reference photo?",
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      );
+
+      if (shouldExtract == null) {
+        return; // Cancelled completely
+      }
+
+      if (shouldExtract == true) {
+        if (!mounted) return;
+        // Run Gemini extraction!
+        // Show loading dialog
+        showMorphDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const GlassDialogContainer(
+            title: "AI Analyzing...",
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator.adaptive(),
+                  SizedBox(height: 16),
+                  Text("Gemini is reading your schedule table...", textAlign: TextAlign.center),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        try {
+          final isPdf = filePath.toLowerCase().endsWith('.pdf');
+          final mimeType = isPdf ? 'application/pdf' : (filePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+          final subjects = ref.read(attendanceProvider).subjects;
+
+          final extractedSessions = await GeminiService.instance.extractSchedule(
+            file: File(filePath),
+            mimeType: mimeType,
+            apiKey: apiKey,
+            modelName: settings.geminiModel,
+            existingSubjects: subjects,
+            customPrompt: settings.geminiCustomPrompt,
+          );
+
+          if (mounted) {
+            Navigator.pop(context); // Dismiss loading dialog
+          }
+
+          if (extractedSessions.isEmpty) {
+            if (mounted) {
+              MainScaffold.showGlassToast(context, "No classes could be extracted.", isError: true);
+            }
+            return;
+          }
+
+          // Launch PdfConfirmationDialog
+          if (!mounted) return;
+          showMorphDialog(
+            context: context,
+            builder: (c) => PdfConfirmationDialog(
+              extractedSessions: extractedSessions,
+              initialDate: DateTime.now(),
+              instituteName: "Gemini AI",
+              showSaveOption: false,
+              onConfirm: (confirmedSessions, selectedDate, _) {
+                final notifier = ref.read(attendanceProvider.notifier);
+                for (var session in confirmedSessions) {
+                  notifier.addClassSession(session);
+                }
+                if (mounted) {
+                  MainScaffold.showGlassToast(
+                    context,
+                    "Imported ${confirmedSessions.length} classes using Gemini!",
+                  );
+                }
+              },
+            ),
+          );
+          return;
+        } catch (e) {
+          if (mounted) {
+            Navigator.pop(context); // Dismiss loading dialog
+            MainScaffold.showGlassToast(context, "AI extraction failed: $e", isError: true);
+          }
+          return;
+        }
+      }
+    }
+    
+    if (!mounted) return;
+
+    // Default Fallback flow (save as reference photo)
     String? imagePath = filePath;
 
     // If PDF, convert first
@@ -496,6 +656,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen>
       MainScaffold.showGlassToast(context, "Processing PDF...");
       imagePath =
           await ref.read(pdfServiceProvider).convertPdfToImage(filePath);
+      if (!mounted) return;
     }
 
     if (imagePath == null) {

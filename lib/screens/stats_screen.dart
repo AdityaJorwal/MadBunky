@@ -61,12 +61,15 @@ class _GlobalStatsContentState extends ConsumerState<GlobalStatsContent> {
   Widget build(BuildContext context) {
     final state = ref.watch(attendanceProvider);
     final subjects = state.subjects;
+    final theme = Theme.of(context);
 
     if (subjects.isEmpty) {
       return Center(
         child: Text(
           "No data available yet.",
-          style: GoogleFonts.outfit(color: Colors.white54),
+          style: GoogleFonts.outfit(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
         ),
       );
     }
@@ -97,7 +100,7 @@ class _GlobalStatsContentState extends ConsumerState<GlobalStatsContent> {
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white70,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 12),
@@ -113,7 +116,7 @@ class _GlobalStatsContentState extends ConsumerState<GlobalStatsContent> {
                 style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white70,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
               _buildTrendToggle(),
@@ -135,7 +138,7 @@ class _GlobalStatsContentState extends ConsumerState<GlobalStatsContent> {
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white70,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 12),
@@ -148,7 +151,7 @@ class _GlobalStatsContentState extends ConsumerState<GlobalStatsContent> {
             style: GoogleFonts.outfit(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white70,
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 12),
@@ -197,7 +200,7 @@ class _GlobalStatsContentState extends ConsumerState<GlobalStatsContent> {
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected
                 ? Theme.of(context).colorScheme.primary
-                : Colors.white54,
+                : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -238,7 +241,9 @@ class _ActivityHeatMap extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -277,7 +282,7 @@ class _ActivityHeatMap extends StatelessWidget {
                 final day = startDate.add(Duration(days: index));
                 final dayLogs = dailyLogs[day] ?? [];
 
-                Color color = Colors.white.withValues(alpha: 0.05); // No data
+                Color color = Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05); // No data
 
                 if (dayLogs.isNotEmpty) {
                   int p = dayLogs
@@ -396,54 +401,71 @@ class _GlobalTrendChart extends StatelessWidget {
 
     if (spots.isEmpty) {
       return Center(
-          child: Text("No data in this range",
-              style: GoogleFonts.outfit(color: Colors.white30)));
+        child: Text(
+          "No data in this range",
+          style: GoogleFonts.outfit(
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.3),
+          ),
+        ),
+      );
     }
 
     return Container(
       padding: const EdgeInsets.only(right: 16, top: 16),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.1),
+        color: Theme.of(context).colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
       ),
       child: LineChart(
         LineChartData(
-            gridData: FlGridData(show: false),
-            titlesData: FlTitlesData(show: false),
-            borderData: FlBorderData(show: false),
-            minY: 0,
-            maxY: 105,
-            lineBarsData: [
-              LineChartBarData(
-                spots: spots,
-                isCurved: true,
-                color: Theme.of(context).colorScheme.primary,
-                barWidth: 4,
-                isStrokeCapRound: true,
-                dotData: FlDotData(show: false),
-                belowBarData: BarAreaData(
-                  show: true,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
-                      .withValues(alpha: 0.1),
+          gridData: FlGridData(show: false),
+          titlesData: FlTitlesData(show: false),
+          borderData: FlBorderData(show: false),
+          minY: 0,
+          maxY: 105,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: Theme.of(context).colorScheme.primary,
+              barWidth: 4,
+              isStrokeCapRound: true,
+              dotData: FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                gradient: LinearGradient(
+                  colors: [
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+                    Theme.of(context).colorScheme.primary.withValues(alpha: 0.01),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
-            ],
-            lineTouchData: LineTouchData(
-                touchTooltipData: LineTouchTooltipData(
-                    fitInsideHorizontally: true,
-                    fitInsideVertically: true,
-                    getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        return LineTooltipItem(
-                            "${spot.y.toStringAsFixed(1)}%",
-                            const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold));
-                      }).toList();
-                    }))),
+            ),
+          ],
+          lineTouchData: LineTouchData(
+            touchTooltipData: LineTouchTooltipData(
+              fitInsideHorizontally: true,
+              fitInsideVertically: true,
+              getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
+              getTooltipItems: (touchedSpots) {
+                return touchedSpots.map((spot) {
+                  return LineTooltipItem(
+                    "${spot.y.toStringAsFixed(1)}%",
+                    const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -459,8 +481,18 @@ class _SubjectComparisonList extends StatelessWidget {
     final sorted = List<Subject>.from(subjects)
       ..sort((a, b) => b.currentPercentage.compareTo(a.currentPercentage));
 
-    return Column(
-      children: sorted.map((s) => _buildBar(context, s)).toList(),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        children: sorted.map((s) => _buildBar(context, s)).toList(),
+      ),
     );
   }
 
@@ -478,9 +510,10 @@ class _SubjectComparisonList extends StatelessWidget {
             child: Text(
               s.name,
               style: GoogleFonts.outfit(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.8),
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -491,7 +524,7 @@ class _SubjectComparisonList extends StatelessWidget {
                 Container(
                   height: 12,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),
@@ -514,7 +547,10 @@ class _SubjectComparisonList extends StatelessWidget {
             child: Text(
               "${pct.toStringAsFixed(0)}%",
               style: GoogleFonts.outfit(
-                  color: color, fontWeight: FontWeight.bold, fontSize: 13),
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
               textAlign: TextAlign.end,
             ),
           )
@@ -635,7 +671,7 @@ class _SmartForecastList extends StatelessWidget {
           Text(
             s.name,
             style: GoogleFonts.outfit(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onSurface,
               fontSize: 12,
             ),
             maxLines: 1,

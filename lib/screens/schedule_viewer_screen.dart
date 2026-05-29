@@ -11,6 +11,8 @@ import '../providers/providers.dart';
 import '../utils/morph_dialog.dart';
 import '../screens/main_scaffold.dart';
 import 'package:path/path.dart' as path;
+import '../services/gemini_service.dart';
+import '../widgets/pdf_confirmation_dialog.dart';
 
 enum DrawingTool { marker, highlighter, eraser, brush, fountainPen }
 
@@ -424,6 +426,93 @@ class _ScheduleViewerScreenState extends ConsumerState<ScheduleViewerScreen>
     }
   }
 
+  Future<void> _extractWithAI() async {
+    final settings = ref.read(settingsProvider);
+    final apiKey = await GeminiService.instance.getApiKey();
+    if (!mounted) return;
+
+    if (apiKey == null || apiKey.isEmpty) {
+      MainScaffold.showGlassToast(context, "Gemini API Key is not set in Settings.", isError: true);
+      return;
+    }
+
+    // Show loading dialog
+    showMorphDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const GlassDialogContainer(
+        title: "AI Analyzing...",
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator.adaptive(),
+              SizedBox(height: 16),
+              Text("Gemini is reading your schedule table...", textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final isPdf = _currentFile.path.toLowerCase().endsWith('.pdf');
+      final mimeType = isPdf ? 'application/pdf' : (_currentFile.path.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+      final subjects = ref.read(attendanceProvider).subjects;
+
+      final extractedSessions = await GeminiService.instance.extractSchedule(
+        file: _currentFile,
+        mimeType: mimeType,
+        apiKey: apiKey,
+        modelName: settings.geminiModel,
+        existingSubjects: subjects,
+        customPrompt: settings.geminiCustomPrompt,
+      );
+
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading dialog
+      }
+
+      if (extractedSessions.isEmpty) {
+        if (mounted) {
+          MainScaffold.showGlassToast(context, "No classes could be extracted.", isError: true);
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Launch PdfConfirmationDialog
+      showMorphDialog(
+        context: context,
+        builder: (c) => PdfConfirmationDialog(
+          extractedSessions: extractedSessions,
+          initialDate: DateTime.now(),
+          instituteName: "Gemini AI",
+          showSaveOption: false,
+          onConfirm: (confirmedSessions, selectedDate, _) {
+            final notifier = ref.read(attendanceProvider.notifier);
+            for (var session in confirmedSessions) {
+              notifier.addClassSession(session);
+            }
+            if (mounted) {
+              MainScaffold.showGlassToast(
+                context,
+                "Imported ${confirmedSessions.length} classes using Gemini!",
+              );
+            }
+          },
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Dismiss loading dialog
+        MainScaffold.showGlassToast(context, "AI extraction failed: $e", isError: true);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_currentFile.existsSync()) {
@@ -705,6 +794,14 @@ class _ScheduleViewerScreenState extends ConsumerState<ScheduleViewerScreen>
                             ),
                           ),
                           Row(children: [
+                            if (ref.watch(settingsProvider).enableGeminiAI) ...[
+                              _GlassButton(
+                                icon: Icons.auto_awesome,
+                                color: Theme.of(context).colorScheme.primary,
+                                onTap: () => _extractWithAI(),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
                             _GlassButton(
                               icon: Icons.share_outlined,
                               onTap: () => _shareSchedule(_currentFile),

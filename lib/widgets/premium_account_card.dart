@@ -128,20 +128,31 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
         return;
       }
 
-      // Sync Next Week
       final now = DateTime.now();
-      final nextWeekStart = now.add(Duration(days: 8 - now.weekday));
+      // Start of CURRENT week (Monday)
+      final currentWeekStart = now.subtract(Duration(days: now.weekday - 1));
+      final currentWeekStartDate = DateTime(
+          currentWeekStart.year, currentWeekStart.month, currentWeekStart.day);
+      // Start of NEXT week
+      final nextWeekStart = currentWeekStartDate.add(const Duration(days: 7));
 
-      final sessions = await service.fetchEventsForWeek(nextWeekStart);
-      if (sessions.isNotEmpty && mounted) {
+      // Fetch both weeks
+      final currentSessions =
+          await service.fetchEventsForWeek(currentWeekStartDate);
+      final nextSessions = await service.fetchEventsForWeek(nextWeekStart);
+      final allSessions = [...currentSessions, ...nextSessions];
+
+      if (allSessions.isNotEmpty && mounted) {
         final notifier = ref.read(attendanceProvider.notifier);
-        for (var session in sessions) {
+        for (var session in allSessions) {
           notifier.addClassSession(session);
         }
         showMorphSnackBar(context,
-            message: "Auto-synced ${sessions.length} classes for next week");
+            message:
+                "Auto-synced ${allSessions.length} classes (this week + next week)");
       } else if (mounted) {
-        showMorphSnackBar(context, message: "No events found for next week.");
+        showMorphSnackBar(context,
+            message: "No events found for this week or next week.");
       }
     } catch (e) {
       if (mounted) {
@@ -292,7 +303,7 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
                   child: _buildToggleItem(
                     context,
                     label: "Schedule Sync",
-                    subLabel: "Auto-import next week",
+                    subLabel: "Auto-import this & next week",
                     value: settings.autoSyncGoogleCalendar,
                     onChanged: _handleToggleScheduleSync,
                     icon: Icons.calendar_month,
@@ -326,18 +337,20 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
               child: OutlinedButton.icon(
                 onPressed: () async {
                   HapticFeedback.mediumImpact();
+                  final ctx = context;
                   final result = await showMorphDialog(
-                    context: context,
+                    context: ctx,
                     builder: (context) => const GoogleCalendarImportDialog(),
                   );
 
-                  if (result != null && result is Map && mounted) {
+                  if (!mounted) return;
+                  if (result != null && result is Map) {
                     final sessions = result['sessions'] as List<ClassSession>;
                     final range = result['range'] as String;
                     final startOfWeek = result['startOfWeek'] as DateTime;
 
                     showMorphDialog(
-                      context: context,
+                      context: ctx, // ignore: use_build_context_synchronously
                       builder: (c) => PdfConfirmationDialog(
                         extractedSessions: sessions,
                         instituteName: "Google Calendar",
@@ -351,7 +364,7 @@ class _PremiumAccountCardState extends ConsumerState<PremiumAccountCard> {
                           }
                           if (mounted) {
                             showMorphSnackBar(
-                              context,
+                              ctx,
                               message:
                                   "Imported ${confirmedSessions.length} classes from Calendar",
                             );

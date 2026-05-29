@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../theme.dart';
 import '../providers/providers.dart';
+import '../services/gemini_service.dart';
 import '../models/models.dart';
 import 'main_scaffold.dart';
 import 'holiday_screen.dart';
@@ -27,70 +28,12 @@ import 'package:mad_bunky/widgets/premium_account_card.dart'; // Using package i
 
 import '../widgets/morphing_widget.dart';
 import '../utils/morph_dialog.dart';
+import '../widgets/glass_color_picker_dialog.dart';
 
 import '../services/log_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
-
-  Widget _buildNewPresetOption(
-    BuildContext context,
-    String label,
-    int index,
-    int selectedIndex,
-    VoidCallback onTap, {
-    bool isCustom = false,
-    Color? customColor,
-  }) {
-    final isSelected = index == selectedIndex;
-    final theme = Theme.of(context);
-
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        child: Center(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (isCustom && customColor != null)
-                  Container(
-                    width: 12,
-                    height: 12,
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration: BoxDecoration(
-                      color: customColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color:
-                            theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                        width: 1,
-                      ),
-                    ),
-                  ),
-                Text(
-                  label,
-                  style: GoogleFonts.outfit(
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                    color: isSelected
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildThemeModeOption(
       BuildContext context,
@@ -260,86 +203,6 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 _buildThemeModeRow(context, ref),
-                const SizedBox(height: 24),
-
-                // New Theme Preset Selector
-                // [ Default | System ]
-                Container(
-                  height: 50,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final width = constraints.maxWidth / 2;
-                      int selectedIndex = 0;
-                      if (settings.themePreset == ThemePreset.system) {
-                        selectedIndex = 1;
-                      }
-
-                      return Stack(
-                        children: [
-                          // Sliding Indicator
-                          AnimatedPositioned(
-                            duration: const Duration(milliseconds: 350),
-                            curve: Curves.easeInOutCubic,
-                            left: selectedIndex * width,
-                            top: 4,
-                            bottom: 4,
-                            width: width,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(24),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                        .withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Buttons
-                          Row(
-                            children: [
-                              _buildNewPresetOption(
-                                context,
-                                "Default",
-                                0,
-                                selectedIndex,
-                                () => notifier
-                                    .updateThemePreset(ThemePreset.defaultGray),
-                              ),
-                              _buildNewPresetOption(
-                                context,
-                                "System",
-                                1,
-                                selectedIndex,
-                                () => notifier
-                                    .updateThemePreset(ThemePreset.system),
-                              ),
-                            ],
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-
                 const SizedBox(height: 24),
                 const Divider(height: 1),
                 const SizedBox(height: 16),
@@ -749,73 +612,76 @@ class SettingsScreen extends ConsumerWidget {
                     // List Locations
                     if (settings.enableGeofence)
                       Padding(
-                        padding: const EdgeInsets.only(left: 40, top: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ...settings.campusLocations.map((loc) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: InkWell(
-                                        onTap: () => _editGeofenceLocation(
-                                            context, ref, loc),
-                                        borderRadius: BorderRadius.circular(8),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primaryContainer
-                                                .withValues(alpha: 0.3),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                loc.name,
-                                                style: const TextStyle(
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13),
-                                              ),
-                                              Text(
-                                                "${loc.lat.toStringAsFixed(4)}, ${loc.lng.toStringAsFixed(4)} (${loc.radius.round()}m)",
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  fontFamily: GoogleFonts
-                                                          .sourceCodePro()
-                                                      .fontFamily,
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withValues(alpha: 0.7),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
+                        padding: const EdgeInsets.only(left: 40, top: 12, bottom: 8),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (settings.campusLocations.isEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.all(12.0),
+                                  child: Text(
+                                    "No locations configured.",
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                    ),
+                                  ),
+                                ),
+                              ...settings.campusLocations.map((loc) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.05),
                                       ),
                                     ),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
+                                    child: Row(
                                       children: [
+                                        Expanded(
+                                          child: InkWell(
+                                            onTap: () => _editGeofenceLocation(context, ref, loc),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  loc.name,
+                                                  style: GoogleFonts.outfit(
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  "${loc.lat.toStringAsFixed(4)}, ${loc.lng.toStringAsFixed(4)} (${loc.radius.round()}m)",
+                                                  style: GoogleFonts.sourceCodePro(
+                                                    fontSize: 11,
+                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
                                         IconButton(
                                           icon: Icon(
-                                            loc.subjectIds.isEmpty
-                                                ? Icons.link
-                                                : Icons
-                                                    .link_off, // Visual cue? Or colored link?
+                                            loc.subjectIds.isEmpty ? Icons.link : Icons.link_off,
                                             size: 18,
-                                            color: loc.subjectIds.isNotEmpty
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .primary
-                                                : null,
+                                            color: loc.subjectIds.isNotEmpty ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
                                           ),
                                           tooltip: "Link Subjects",
                                           onPressed: () {
@@ -824,50 +690,46 @@ class SettingsScreen extends ConsumerWidget {
                                           },
                                         ),
                                         IconButton(
-                                          icon:
-                                              const Icon(Icons.edit, size: 18),
+                                          icon: Icon(Icons.edit, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                                           tooltip: "Edit Location",
                                           onPressed: () {
                                             HapticFeedback.lightImpact();
-                                            _editGeofenceLocation(
-                                                context, ref, loc);
+                                            _editGeofenceLocation(context, ref, loc);
                                           },
                                         ),
                                         IconButton(
-                                          icon: Icon(Icons.delete_outline,
-                                              size: 18,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .error),
-                                          onPressed: () =>
-                                              _deleteGeofenceLocation(
-                                                  context, ref, loc.id),
+                                          icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                                          tooltip: "Delete Location",
+                                          onPressed: () => _deleteGeofenceLocation(context, ref, loc.id),
                                         ),
                                       ],
                                     ),
-                                  ],
+                                  ),
+                                );
+                              }),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton.icon(
+                                  style: FilledButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                    foregroundColor: Theme.of(context).colorScheme.primary,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () => _addGeofenceLocation(context, ref),
+                                  icon: const Icon(Icons.add_location_alt, size: 16),
+                                  label: Text(
+                                    "Add Location",
+                                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
                                 ),
-                              );
-                            }),
-                            SizedBox(
-                              height: 32,
-                              child: TextButton.icon(
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 12),
-                                  backgroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer
-                                      .withValues(alpha: 0.5),
-                                ),
-                                onPressed: () =>
-                                    _addGeofenceLocation(context, ref),
-                                icon: const Icon(Icons.add_location_alt,
-                                    size: 16),
-                                label: const Text("Add Location"),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                   ],
@@ -915,86 +777,92 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 if (settings.enableWifiTrigger)
                   Padding(
-                    padding: const EdgeInsets.only(left: 40, top: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (settings.campusSsids.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Text(
-                              "No WiFi networks added yet.",
-                              style: TextStyle(
+                    padding: const EdgeInsets.only(left: 40, top: 12, bottom: 8),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.08),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (settings.campusSsids.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Text(
+                                "No WiFi networks added yet.",
+                                style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withValues(alpha: 0.6)),
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                ),
+                              ),
                             ),
-                          ),
-                        ...settings.campusSsids.map((ssid) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primaryContainer
-                                          .withValues(alpha: 0.3),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.wifi, size: 16),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            ssid,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
+                          ...settings.campusSsids.map((ssid) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.05),
                                   ),
                                 ),
-                                IconButton(
-                                  icon: Icon(Icons.delete_outline,
-                                      size: 18,
-                                      color:
-                                          Theme.of(context).colorScheme.error),
-                                  onPressed: () =>
-                                      _deleteWifi(context, ref, ssid),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.wifi, size: 16, color: Theme.of(context).colorScheme.primary),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        ssid,
+                                        style: GoogleFonts.outfit(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Theme.of(context).colorScheme.onSurface,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: Icon(Icons.delete_outline,
+                                          size: 18,
+                                          color: Theme.of(context).colorScheme.error),
+                                      onPressed: () => _deleteWifi(context, ref, ssid),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
+                            );
+                          }),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                                foregroundColor: Theme.of(context).colorScheme.primary,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () => _addCurrentWifi(context, ref),
+                              icon: const Icon(Icons.add, size: 16),
+                              label: Text(
+                                "Add Current WiFi",
+                                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
                             ),
-                          );
-                        }),
-                        SizedBox(
-                          height: 32,
-                          child: TextButton.icon(
-                            style: TextButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 12),
-                              backgroundColor: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
-                                  .withValues(alpha: 0.5),
-                            ),
-                            onPressed: () => _addCurrentWifi(context, ref),
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text("Add Current WiFi"),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 const SizedBox(height: 8),
@@ -1038,101 +906,45 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-                if (settings.enableHolidayAwareness) ...[
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const HolidayScreen()));
-                    },
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8, horizontal: 12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primaryContainer
-                            .withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.edit_calendar,
-                              size: 16,
-                              color: Theme.of(context).colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Manage Holidays",
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                if (settings.enableHolidayAwareness)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 40, top: 12, bottom: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
+                        ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HolidayScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.edit_calendar, size: 16),
+                        label: Text(
+                          "Manage Holidays",
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
                       ),
                     ),
                   ),
-                ],
               ],
             ),
           ),
           const SizedBox(height: 24),
-          // DEBUG SECTION (Hidden)
-          Consumer(
-            builder: (context, ref, _) {
-              final isDebug = ref.watch(debugModeProvider);
-              if (!isDebug) return const SizedBox.shrink();
-
-              return Column(
-                children: [
-                  Center(child: _SectionHeader(title: "Developer Options")),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .tertiary
-                              .withValues(alpha: 0.5),
-                          width: 1,
-                        )),
-                    elevation: 0,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .tertiaryContainer
-                        .withValues(alpha: 0.2),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      leading: Icon(Icons.developer_board,
-                          color: Theme.of(context).colorScheme.tertiary),
-                      title: Text("Open Debug Console",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.tertiary)),
-                      subtitle: const Text("Crash Lab, Service Monitor, Logs"),
-                      trailing: Icon(Icons.arrow_forward_ios,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.tertiary),
-                      onTap: () {
-                        HapticFeedback.mediumImpact();
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const DebugToolsScreen()));
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              );
-            },
-          ),
+          Center(child: _SectionHeader(title: "AI Settings")),
+          const SizedBox(height: 16),
+          const _GeminiSettingsCard(),
+          const SizedBox(height: 24),
           Center(child: _SectionHeader(title: "Backup & Restore")),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1299,105 +1111,158 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          // Undo Action
-          Card(
-            shape: RoundedRectangleBorder(
+          const SizedBox(height: 24),
+          Center(child: _SectionHeader(title: "Account & Customization")),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(24),
             ),
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainer,
-            child: ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              leading: const Icon(Icons.undo),
-              title: const Text("Undo Last Action"),
-              onTap: () async {
-                HapticFeedback.mediumImpact();
-                await ref.read(attendanceProvider.notifier).undoGlobalChange();
-                if (context.mounted) {
-                  MainScaffold.showGlassToast(context, "Action Undone");
-                }
-              },
+            child: Column(
+              children: [
+                ListTile(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                  ),
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text("Edit User Card"),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    HapticFeedback.mediumImpact();
+                    _showEditUserCardDialog(context, ref);
+                  },
+                ),
+                const Divider(height: 1, indent: 56),
+                ListTile(
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
+                  ),
+                  leading: const Icon(Icons.undo),
+                  title: const Text("Undo Last Action"),
+                  onTap: () async {
+                    HapticFeedback.mediumImpact();
+                    await ref.read(attendanceProvider.notifier).undoGlobalChange();
+                    if (context.mounted) {
+                      MainScaffold.showGlassToast(context, "Action Undone");
+                    }
+                  },
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
-          // PROFILES
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainer,
-            child: ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              leading: const Icon(Icons.person_outline),
-              title: const Text("Edit User Card"),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                _showEditUserCardDialog(context, ref);
-              },
-            ),
+          const SizedBox(height: 24),
+          Center(child: _SectionHeader(title: "Support & Information")),
+          const SizedBox(height: 8),
+          Consumer(
+            builder: (context, ref, _) {
+              final isDebug = ref.watch(debugModeProvider);
+              return Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(24),
+                          topRight: const Radius.circular(24),
+                          bottomLeft: Radius.circular(isDebug ? 0 : 24),
+                          bottomRight: Radius.circular(isDebug ? 0 : 24),
+                        ),
+                      ),
+                      leading: const Icon(Icons.info_outline),
+                      title: const Text("About"),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () {
+                        HapticFeedback.mediumImpact();
+                        _showAboutDialog(context);
+                      },
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(isDebug ? 0 : 24),
+                      ),
+                      leading: const Icon(Icons.bug_report_outlined),
+                      title: const Text("Share Bug Report / Logs"),
+                      subtitle: const Text("Help us fix issues by sharing app logs"),
+                      trailing: const Icon(Icons.share, size: 16),
+                      onTap: () async {
+                        HapticFeedback.mediumImpact();
+                        await LogService().shareLogs();
+                      },
+                    ),
+                    if (isDebug) ...[
+                      const Divider(height: 1, indent: 56),
+                      ListTile(
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(24),
+                            bottomRight: Radius.circular(24),
+                          ),
+                        ),
+                        leading: Icon(Icons.developer_board, color: Theme.of(context).colorScheme.tertiary),
+                        title: Text(
+                          "Open Debug Console",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          "Crash Lab, Service Monitor, Logs",
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Theme.of(context).colorScheme.tertiary),
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DebugToolsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
           ),
-          const SizedBox(height: 16),
-          // SHARE LOGS (Bug Report)
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainer,
-            child: ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              leading: const Icon(Icons.bug_report_outlined),
-              title: const Text("Share Bug Report / Logs"),
-              subtitle: const Text("Help us fix issues by sharing app logs"),
-              trailing: const Icon(Icons.share, size: 16),
-              onTap: () async {
-                HapticFeedback.mediumImpact();
-                await LogService().shareLogs();
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          // ABOUT
-          Card(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            elevation: 0,
-            color: Theme.of(context).colorScheme.surfaceContainer,
-            child: ListTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: const Text("About"),
-              leading: const Icon(Icons.info_outline),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () {
-                HapticFeedback.mediumImpact();
-                _showAboutDialog(context);
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: Text(
-              "Version 1.0.0",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.5),
-              ),
+          const SizedBox(height: 32),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 0),
+            child: Column(
+              children: [
+                Text(
+                  "MadBunky",
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Version 1.0.0 • Made with ❤️ by AJ",
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 100),
@@ -2418,6 +2283,373 @@ class _SubjectSelectionDialogContentState
           ],
         ),
       ],
+    );
+  }
+}
+
+// ==========================================
+// GEMINI SETTINGS CARD
+// ==========================================
+class _GeminiSettingsCard extends ConsumerStatefulWidget {
+  const _GeminiSettingsCard();
+
+  @override
+  ConsumerState<_GeminiSettingsCard> createState() => _GeminiSettingsCardState();
+}
+
+class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
+  bool _isTesting = false;
+  late TextEditingController _customPromptController;
+  String? _lastSyncedPrompt;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialPrompt = ref.read(settingsProvider).geminiCustomPrompt;
+    _customPromptController = TextEditingController(text: initialPrompt);
+    _lastSyncedPrompt = initialPrompt;
+    _customPromptController.addListener(_onPromptChanged);
+  }
+
+  void _onPromptChanged() {
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _customPromptController.removeListener(_onPromptChanged);
+    _customPromptController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showApiKeyDialog(BuildContext context, String? currentKey) async {
+    final controller = TextEditingController(text: currentKey);
+    bool obscureText = true;
+
+    await showMorphDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return GlassDialogContainer(
+              title: "Gemini API Key",
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Cancel"),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final key = controller.text.trim();
+                    if (key.isEmpty) {
+                      await GeminiService.instance.deleteApiKey();
+                    } else {
+                      await GeminiService.instance.saveApiKey(key);
+                    }
+                    ref.invalidate(geminiApiKeyProvider);
+                    if (context.mounted) {
+                      Navigator.pop(ctx);
+                      MainScaffold.showGlassToast(context, "API Key Saved");
+                    }
+                  },
+                  child: const Text("Save"),
+                ),
+              ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Get a free Gemini API Key from Google AI Studio to enable schedule scanning & extraction.",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: controller,
+                    obscureText: obscureText,
+                    decoration: InputDecoration(
+                      labelText: "API Key",
+                      hintText: "AIzaSy...",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
+                        onPressed: () => setState(() => obscureText = !obscureText),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () async {
+                      final url = Uri.parse("https://aistudio.google.com/");
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.open_in_new, size: 16, color: Theme.of(context).colorScheme.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Get API Key from Google AI Studio",
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _testConnection(String apiKey, String modelName) async {
+    setState(() => _isTesting = true);
+    final error = await GeminiService.instance.testApiKey(apiKey, modelName);
+    if (mounted) {
+      setState(() => _isTesting = false);
+      if (error == null) {
+        MainScaffold.showGlassToast(context, "Gemini Connection Successful!");
+      } else {
+        MainScaffold.showGlassToast(context, "Connection failed: $error", isError: true);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = ref.watch(settingsProvider);
+    final notifier = ref.read(settingsProvider.notifier);
+    final apiKeyAsync = ref.watch(geminiApiKeyProvider);
+
+    if (_lastSyncedPrompt != settings.geminiCustomPrompt) {
+      _lastSyncedPrompt = settings.geminiCustomPrompt;
+      _customPromptController.text = settings.geminiCustomPrompt;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome,
+                color: settings.enableGeminiAI ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Gemini AI Timetable Parsing",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "Use Gemini to extract classes and dates",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: settings.enableGeminiAI,
+                onChanged: (val) {
+                  HapticFeedback.mediumImpact();
+                  notifier.toggleGeminiAI(val);
+                },
+              ),
+            ],
+          ),
+          if (settings.enableGeminiAI) ...[
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            apiKeyAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+              error: (err, stack) => Text("Error loading API key: $err"),
+              data: (apiKey) {
+                final hasKey = apiKey != null && apiKey.isNotEmpty;
+                final displayKey = hasKey ? "••••••••" : "Not Set";
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.vpn_key_outlined),
+                        const SizedBox(width: 16),
+                        const Text(
+                          "Gemini API Key",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () => _showApiKeyDialog(context, apiKey),
+                          child: Text(
+                            displayKey,
+                            style: TextStyle(
+                              color: hasKey ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(Icons.psychology_outlined),
+                        const SizedBox(width: 16),
+                        const Text(
+                          "AI Model",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: [
+                              'gemini-3.1-pro-preview',
+                              'gemini-3.1-flash-lite',
+                            ].contains(settings.geminiModel)
+                                ? settings.geminiModel
+                                : 'gemini-3.1-flash-lite',
+                            alignment: Alignment.centerRight,
+                            style: GoogleFonts.outfit(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: "gemini-3.1-pro-preview", child: Text("3.1 Pro")),
+                              DropdownMenuItem(value: "gemini-3.1-flash-lite", child: Text("3.1 Flash-Lite")),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                HapticFeedback.lightImpact();
+                                notifier.updateGeminiModel(val);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.edit_note),
+                            const SizedBox(width: 16),
+                            const Text(
+                              "Custom Extraction Prompt",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          minLines: 1,
+                          maxLines: 2,
+                          controller: _customPromptController,
+                          style: GoogleFonts.outfit(fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: "e.g. Ignore Saturday classes, map CSE to Computer Science, start from June 1st",
+                            hintStyle: GoogleFonts.outfit(
+                              fontSize: 13,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                            ),
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            suffixIcon: _customPromptController.text != settings.geminiCustomPrompt
+                                ? IconButton(
+                                    icon: const Icon(Icons.check, size: 20),
+                                    color: Theme.of(context).colorScheme.primary,
+                                    tooltip: "Save Prompt",
+                                    onPressed: () async {
+                                      HapticFeedback.mediumImpact();
+                                      await notifier.updateGeminiCustomPrompt(_customPromptController.text);
+                                      if (context.mounted) {
+                                        FocusScope.of(context).unfocus();
+                                        MainScaffold.showGlassToast(context, "Prompt Saved");
+                                      }
+                                    },
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (hasKey) ...[
+                      const SizedBox(height: 12),
+                      const Divider(height: 1),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(Icons.network_ping),
+                          const SizedBox(width: 16),
+                          const Text(
+                            "Test API Key",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          _isTesting
+                              ? const CircularProgressIndicator.adaptive()
+                              : TextButton.icon(
+                                  icon: const Icon(Icons.play_arrow),
+                                  label: const Text("Test Connection"),
+                                  onPressed: () => _testConnection(apiKey, settings.geminiModel),
+                                ),
+                        ],
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

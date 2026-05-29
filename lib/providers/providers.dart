@@ -32,6 +32,7 @@ import '../services/google_calendar_service.dart'; // Added
 import '../services/auth_service.dart'; // Added
 import '../services/google_drive_service.dart'; // Added
 import '../services/backup_service.dart'; // Added
+import '../services/gemini_service.dart';
 
 final pdfServiceProvider = Provider<PdfService>((ref) {
   return PdfService();
@@ -116,10 +117,10 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   void _loadSettings() {
     final themeIndex = prefs.getInt('themeMode') ?? 2;
-    int themePresetIndex = prefs.getInt('themePreset') ?? 0;
+    int themePresetIndex = prefs.getInt('themePreset') ?? 1; // Default to system (1)
 
     if (themePresetIndex >= ThemePreset.values.length) {
-      themePresetIndex = 0;
+      themePresetIndex = 1; // Default to ThemePreset.system (index 1)
     }
 
     final useMaterialYou = prefs.getBool('useMaterialYou') ?? true;
@@ -139,6 +140,9 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
     final customThemeColor = prefs.getInt('customThemeColor');
     final isNeon = prefs.getBool('isNeon') ?? false; // Added
+    final geminiModel = prefs.getString('geminiModel') ?? 'gemini-3.1-flash-lite';
+    final enableGeminiAI = prefs.getBool('enableGeminiAI') ?? true;
+    final geminiCustomPrompt = prefs.getString('geminiCustomPrompt') ?? '';
 
     // Load SSIDs
     final campusSsids = prefs.getStringList('campusSsids') ?? [];
@@ -200,12 +204,30 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
       autoSyncGoogleCalendar:
           prefs.getBool('autoSyncGoogleCalendar') ?? false, // Added
       isNeon: isNeon, // Added
+      geminiModel: geminiModel,
+      enableGeminiAI: enableGeminiAI,
+      geminiCustomPrompt: geminiCustomPrompt,
     );
   }
 
   Future<void> toggleAutoSyncGoogleCalendar(bool value) async {
     state = state.copyWith(autoSyncGoogleCalendar: value);
     await prefs.setBool('autoSyncGoogleCalendar', value);
+  }
+
+  Future<void> updateGeminiModel(String model) async {
+    state = state.copyWith(geminiModel: model);
+    await prefs.setString('geminiModel', model);
+  }
+
+  Future<void> updateGeminiCustomPrompt(String value) async {
+    state = state.copyWith(geminiCustomPrompt: value);
+    await prefs.setString('geminiCustomPrompt', value);
+  }
+
+  Future<void> toggleGeminiAI(bool value) async {
+    state = state.copyWith(enableGeminiAI: value);
+    await prefs.setBool('enableGeminiAI', value);
   }
 
   Future<void> updateThemeMode(ThemeType theme) async {
@@ -223,9 +245,9 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   Future<void> setCustomThemeColor(Color color) async {
     state = state.copyWith(
-        customThemeColor: color.toARGB32(), themePreset: ThemePreset.custom);
+        customThemeColor: color.toARGB32(), themePreset: ThemePreset.system);
     await prefs.setInt('customThemeColor', color.toARGB32());
-    await prefs.setInt('themePreset', ThemePreset.custom.index);
+    await prefs.setInt('themePreset', ThemePreset.system.index);
   }
 
   Future<void> toggleNeon(bool value) async {
@@ -411,6 +433,10 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((
   final backupService = ref.watch(backupServiceProvider);
   final calendarService = ref.watch(googleCalendarServiceProvider);
   return SettingsNotifier(prefs, backupService, calendarService);
+});
+
+final geminiApiKeyProvider = FutureProvider<String?>((ref) async {
+  return await GeminiService.instance.getApiKey();
 });
 
 // --- Debug Log Provider (Temporary) ---
@@ -3556,7 +3582,8 @@ final proxyEffectTriggerProvider =
 
 enum CalendarMenuAction {
   duplicate,
-  import, // Legacy/Backup import
+  import, // Legacy/Backup import (shows choice dialog)
+  importGoogleCalendar, // Direct Google Calendar import
   restoreBackup, // Explicit Backup import
   importPdf,
   cameraScan,

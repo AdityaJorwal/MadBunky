@@ -533,9 +533,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
                       ),
                     );
                   },
-                  child: KeyedSubtree(
-                    key: ValueKey<int>(_currentIndex),
-                    child: _screens[_currentIndex],
+                  child: RepaintBoundary(
+                    child: KeyedSubtree(
+                      key: ValueKey<int>(_currentIndex),
+                      child: _screens[_currentIndex],
+                    ),
                   ),
                 ),
               ),
@@ -548,9 +550,11 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
                       ? Scaffold(
                           backgroundColor:
                               Theme.of(context).colorScheme.surface,
-                          body: GlobalStatsContent(
-                            key: const ValueKey('GlobalStatsContent'),
-                            topPadding: headerHeight + 10,
+                          body: RepaintBoundary(
+                            child: GlobalStatsContent(
+                              key: const ValueKey('GlobalStatsContent'),
+                              topPadding: headerHeight + 10,
+                            ),
                           ),
                         )
                       : const SizedBox.shrink(),
@@ -1877,8 +1881,21 @@ class _MainScaffoldState extends ConsumerState<MainScaffold>
                               },
                             ),
                             _GlassMenuItem(
+                              icon: Icons.calendar_month_rounded,
+                              label: "Import from Google Calendar",
+                              color: Theme.of(context).colorScheme.primary,
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                Navigator.pop(context);
+                                ref
+                                    .read(calendarMenuActionProvider.notifier)
+                                    .state =
+                                    CalendarMenuAction.importGoogleCalendar;
+                              },
+                            ),
+                            _GlassMenuItem(
                               icon: Icons.restore_page_rounded,
-                              label: "Import Schedule",
+                              label: "Import from Backup File",
                               color: Theme.of(context).colorScheme.onSurface,
                               onTap: () {
                                 HapticFeedback.mediumImpact();
