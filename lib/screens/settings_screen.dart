@@ -7,7 +7,6 @@ import 'package:network_info_plus/network_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../theme.dart';
 import '../providers/providers.dart';
 import '../services/gemini_service.dart';
 import '../models/models.dart';
@@ -28,7 +27,6 @@ import 'package:mad_bunky/widgets/premium_account_card.dart'; // Using package i
 
 import '../widgets/morphing_widget.dart';
 import '../utils/morph_dialog.dart';
-import '../widgets/glass_color_picker_dialog.dart';
 
 import '../services/log_service.dart';
 
@@ -191,7 +189,6 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           const PremiumAccountCard(),
           const SizedBox(height: 24),
-
           const SizedBox(height: 24),
           Center(child: _SectionHeader(title: "Essentials")),
           Container(
@@ -612,14 +609,21 @@ class SettingsScreen extends ConsumerWidget {
                     // List Locations
                     if (settings.enableGeofence)
                       Padding(
-                        padding: const EdgeInsets.only(left: 40, top: 12, bottom: 8),
+                        padding:
+                            const EdgeInsets.only(left: 40, top: 12, bottom: 8),
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.4),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surface
+                                .withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.08),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withValues(alpha: 0.08),
                             ),
                           ),
                           child: Column(
@@ -633,7 +637,10 @@ class SettingsScreen extends ConsumerWidget {
                                     style: GoogleFonts.outfit(
                                       fontSize: 12,
                                       fontStyle: FontStyle.italic,
-                                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant
+                                          .withValues(alpha: 0.6),
                                     ),
                                   ),
                                 ),
@@ -643,34 +650,47 @@ class SettingsScreen extends ConsumerWidget {
                                   child: Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest
+                                          .withValues(alpha: 0.3),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.05),
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outline
+                                            .withValues(alpha: 0.05),
                                       ),
                                     ),
                                     child: Row(
                                       children: [
                                         Expanded(
                                           child: InkWell(
-                                            onTap: () => _editGeofenceLocation(context, ref, loc),
+                                            onTap: () => _editGeofenceLocation(
+                                                context, ref, loc),
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   loc.name,
                                                   style: GoogleFonts.outfit(
                                                     fontWeight: FontWeight.bold,
                                                     fontSize: 14,
-                                                    color: Theme.of(context).colorScheme.onSurface,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurface,
                                                   ),
                                                 ),
                                                 const SizedBox(height: 2),
                                                 Text(
                                                   "${loc.lat.toStringAsFixed(4)}, ${loc.lng.toStringAsFixed(4)} (${loc.radius.round()}m)",
-                                                  style: GoogleFonts.sourceCodePro(
+                                                  style:
+                                                      GoogleFonts.sourceCodePro(
                                                     fontSize: 11,
-                                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
                                                   ),
                                                 ),
                                               ],
@@ -679,9 +699,17 @@ class SettingsScreen extends ConsumerWidget {
                                         ),
                                         IconButton(
                                           icon: Icon(
-                                            loc.subjectIds.isEmpty ? Icons.link : Icons.link_off,
+                                            loc.subjectIds.isEmpty
+                                                ? Icons.link
+                                                : Icons.link_off,
                                             size: 18,
-                                            color: loc.subjectIds.isNotEmpty ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                                            color: loc.subjectIds.isNotEmpty
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .primary
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                           ),
                                           tooltip: "Link Subjects",
                                           onPressed: () {
@@ -690,17 +718,28 @@ class SettingsScreen extends ConsumerWidget {
                                           },
                                         ),
                                         IconButton(
-                                          icon: Icon(Icons.edit, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                                          icon: Icon(Icons.edit,
+                                              size: 18,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant),
                                           tooltip: "Edit Location",
                                           onPressed: () {
                                             HapticFeedback.lightImpact();
-                                            _editGeofenceLocation(context, ref, loc);
+                                            _editGeofenceLocation(
+                                                context, ref, loc);
                                           },
                                         ),
                                         IconButton(
-                                          icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                                          icon: Icon(Icons.delete_outline,
+                                              size: 18,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .error),
                                           tooltip: "Delete Location",
-                                          onPressed: () => _deleteGeofenceLocation(context, ref, loc.id),
+                                          onPressed: () =>
+                                              _deleteGeofenceLocation(
+                                                  context, ref, loc.id),
                                         ),
                                       ],
                                     ),
@@ -712,19 +751,28 @@ class SettingsScreen extends ConsumerWidget {
                                 width: double.infinity,
                                 child: FilledButton.icon(
                                   style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
-                                    backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                    foregroundColor: Theme.of(context).colorScheme.primary,
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 8),
+                                    backgroundColor: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withValues(alpha: 0.1),
+                                    foregroundColor:
+                                        Theme.of(context).colorScheme.primary,
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  onPressed: () => _addGeofenceLocation(context, ref),
-                                  icon: const Icon(Icons.add_location_alt, size: 16),
+                                  onPressed: () =>
+                                      _addGeofenceLocation(context, ref),
+                                  icon: const Icon(Icons.add_location_alt,
+                                      size: 16),
                                   label: Text(
                                     "Add Location",
-                                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                                    style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13),
                                   ),
                                 ),
                               ),
@@ -777,14 +825,21 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 if (settings.enableWifiTrigger)
                   Padding(
-                    padding: const EdgeInsets.only(left: 40, top: 12, bottom: 8),
+                    padding:
+                        const EdgeInsets.only(left: 40, top: 12, bottom: 8),
                     child: Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.4),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surface
+                            .withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.08),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .outline
+                              .withValues(alpha: 0.08),
                         ),
                       ),
                       child: Column(
@@ -798,7 +853,10 @@ class SettingsScreen extends ConsumerWidget {
                                 style: GoogleFonts.outfit(
                                   fontSize: 12,
                                   fontStyle: FontStyle.italic,
-                                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
+                                      .withValues(alpha: 0.6),
                                 ),
                               ),
                             ),
@@ -806,17 +864,28 @@ class SettingsScreen extends ConsumerWidget {
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 8.0),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.3),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.05),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outline
+                                        .withValues(alpha: 0.05),
                                   ),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(Icons.wifi, size: 16, color: Theme.of(context).colorScheme.primary),
+                                    Icon(Icons.wifi,
+                                        size: 16,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -824,7 +893,9 @@ class SettingsScreen extends ConsumerWidget {
                                         style: GoogleFonts.outfit(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
-                                          color: Theme.of(context).colorScheme.onSurface,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -832,8 +903,11 @@ class SettingsScreen extends ConsumerWidget {
                                     IconButton(
                                       icon: Icon(Icons.delete_outline,
                                           size: 18,
-                                          color: Theme.of(context).colorScheme.error),
-                                      onPressed: () => _deleteWifi(context, ref, ssid),
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .error),
+                                      onPressed: () =>
+                                          _deleteWifi(context, ref, ssid),
                                     ),
                                   ],
                                 ),
@@ -845,9 +919,14 @@ class SettingsScreen extends ConsumerWidget {
                             width: double.infinity,
                             child: FilledButton.icon(
                               style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                                foregroundColor: Theme.of(context).colorScheme.primary,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withValues(alpha: 0.1),
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.primary,
                                 elevation: 0,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -857,7 +936,8 @@ class SettingsScreen extends ConsumerWidget {
                               icon: const Icon(Icons.add, size: 16),
                               label: Text(
                                 "Add Current WiFi",
-                                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                                style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
                               ),
                             ),
                           ),
@@ -908,14 +988,19 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 if (settings.enableHolidayAwareness)
                   Padding(
-                    padding: const EdgeInsets.only(left: 40, top: 12, bottom: 8),
+                    padding:
+                        const EdgeInsets.only(left: 40, top: 12, bottom: 8),
                     child: SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
                         style: FilledButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 8),
-                          backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                          foregroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.1),
+                          foregroundColor:
+                              Theme.of(context).colorScheme.primary,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -932,7 +1017,8 @@ class SettingsScreen extends ConsumerWidget {
                         icon: const Icon(Icons.edit_calendar, size: 16),
                         label: Text(
                           "Manage Holidays",
-                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                       ),
                     ),
@@ -1148,7 +1234,9 @@ class SettingsScreen extends ConsumerWidget {
                   title: const Text("Undo Last Action"),
                   onTap: () async {
                     HapticFeedback.mediumImpact();
-                    await ref.read(attendanceProvider.notifier).undoGlobalChange();
+                    await ref
+                        .read(attendanceProvider.notifier)
+                        .undoGlobalChange();
                     if (context.mounted) {
                       MainScaffold.showGlassToast(context, "Action Undone");
                     }
@@ -1194,7 +1282,8 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       leading: const Icon(Icons.bug_report_outlined),
                       title: const Text("Share Bug Report / Logs"),
-                      subtitle: const Text("Help us fix issues by sharing app logs"),
+                      subtitle:
+                          const Text("Help us fix issues by sharing app logs"),
                       trailing: const Icon(Icons.share, size: 16),
                       onTap: () async {
                         HapticFeedback.mediumImpact();
@@ -1210,7 +1299,8 @@ class SettingsScreen extends ConsumerWidget {
                             bottomRight: Radius.circular(24),
                           ),
                         ),
-                        leading: Icon(Icons.developer_board, color: Theme.of(context).colorScheme.tertiary),
+                        leading: Icon(Icons.developer_board,
+                            color: Theme.of(context).colorScheme.tertiary),
                         title: Text(
                           "Open Debug Console",
                           style: TextStyle(
@@ -1221,10 +1311,15 @@ class SettingsScreen extends ConsumerWidget {
                         subtitle: Text(
                           "Crash Lab, Service Monitor, Logs",
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.7),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .tertiary
+                                .withValues(alpha: 0.7),
                           ),
                         ),
-                        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Theme.of(context).colorScheme.tertiary),
+                        trailing: Icon(Icons.arrow_forward_ios,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.tertiary),
                         onTap: () {
                           HapticFeedback.mediumImpact();
                           Navigator.push(
@@ -1251,7 +1346,10 @@ class SettingsScreen extends ConsumerWidget {
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1259,7 +1357,10 @@ class SettingsScreen extends ConsumerWidget {
                   "Version 1.0.0 • Made with ❤️ by AJ",
                   style: GoogleFonts.outfit(
                     fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurfaceVariant
+                        .withValues(alpha: 0.5),
                   ),
                 ),
               ],
@@ -2294,7 +2395,8 @@ class _GeminiSettingsCard extends ConsumerStatefulWidget {
   const _GeminiSettingsCard();
 
   @override
-  ConsumerState<_GeminiSettingsCard> createState() => _GeminiSettingsCardState();
+  ConsumerState<_GeminiSettingsCard> createState() =>
+      _GeminiSettingsCardState();
 }
 
 class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
@@ -2322,7 +2424,8 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
     super.dispose();
   }
 
-  Future<void> _showApiKeyDialog(BuildContext context, String? currentKey) async {
+  Future<void> _showApiKeyDialog(
+      BuildContext context, String? currentKey) async {
     final controller = TextEditingController(text: currentKey);
     bool obscureText = true;
 
@@ -2374,8 +2477,11 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       suffixIcon: IconButton(
-                        icon: Icon(obscureText ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => obscureText = !obscureText),
+                        icon: Icon(obscureText
+                            ? Icons.visibility_off
+                            : Icons.visibility),
+                        onPressed: () =>
+                            setState(() => obscureText = !obscureText),
                       ),
                     ),
                   ),
@@ -2384,7 +2490,8 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                     onTap: () async {
                       final url = Uri.parse("https://aistudio.google.com/");
                       if (await canLaunchUrl(url)) {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        await launchUrl(url,
+                            mode: LaunchMode.externalApplication);
                       }
                     },
                     child: Padding(
@@ -2392,7 +2499,9 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.open_in_new, size: 16, color: Theme.of(context).colorScheme.primary),
+                          Icon(Icons.open_in_new,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary),
                           const SizedBox(width: 8),
                           Text(
                             "Get API Key from Google AI Studio",
@@ -2423,7 +2532,8 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
       if (error == null) {
         MainScaffold.showGlassToast(context, "Gemini Connection Successful!");
       } else {
-        MainScaffold.showGlassToast(context, "Connection failed: $error", isError: true);
+        MainScaffold.showGlassToast(context, "Connection failed: $error",
+            isError: true);
       }
     }
   }
@@ -2451,7 +2561,9 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
             children: [
               Icon(
                 Icons.auto_awesome,
-                color: settings.enableGeminiAI ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
+                color: settings.enableGeminiAI
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -2469,7 +2581,10 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                       "Use Gemini to extract classes and dates",
                       style: TextStyle(
                         fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -2489,7 +2604,8 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
             const Divider(height: 1),
             const SizedBox(height: 12),
             apiKeyAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+              loading: () =>
+                  const Center(child: CircularProgressIndicator.adaptive()),
               error: (err, stack) => Text("Error loading API key: $err"),
               data: (apiKey) {
                 final hasKey = apiKey != null && apiKey.isNotEmpty;
@@ -2513,7 +2629,9 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                           child: Text(
                             displayKey,
                             style: TextStyle(
-                              color: hasKey ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
+                              color: hasKey
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
                             ),
                           ),
                         ),
@@ -2549,8 +2667,12 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                               fontSize: 14,
                             ),
                             items: const [
-                              DropdownMenuItem(value: "gemini-3.1-pro-preview", child: Text("3.1 Pro")),
-                              DropdownMenuItem(value: "gemini-3.1-flash-lite", child: Text("3.1 Flash-Lite")),
+                              DropdownMenuItem(
+                                  value: "gemini-3.1-pro-preview",
+                                  child: Text("3.1 Pro")),
+                              DropdownMenuItem(
+                                  value: "gemini-3.1-flash-lite",
+                                  child: Text("3.1 Flash-Lite")),
                             ],
                             onChanged: (val) {
                               if (val != null) {
@@ -2588,27 +2710,36 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                           controller: _customPromptController,
                           style: GoogleFonts.outfit(fontSize: 14),
                           decoration: InputDecoration(
-                            hintText: "e.g. Ignore Saturday classes, map CSE to Computer Science, start from June 1st",
+                            hintText:
+                                "e.g. Ignore Saturday classes, map CSE to Computer Science, start from June 1st",
                             hintStyle: GoogleFonts.outfit(
                               fontSize: 13,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant
+                                  .withValues(alpha: 0.6),
                             ),
                             isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            suffixIcon: _customPromptController.text != settings.geminiCustomPrompt
+                            suffixIcon: _customPromptController.text !=
+                                    settings.geminiCustomPrompt
                                 ? IconButton(
                                     icon: const Icon(Icons.check, size: 20),
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
                                     tooltip: "Save Prompt",
                                     onPressed: () async {
                                       HapticFeedback.mediumImpact();
-                                      await notifier.updateGeminiCustomPrompt(_customPromptController.text);
+                                      await notifier.updateGeminiCustomPrompt(
+                                          _customPromptController.text);
                                       if (context.mounted) {
                                         FocusScope.of(context).unfocus();
-                                        MainScaffold.showGlassToast(context, "Prompt Saved");
+                                        MainScaffold.showGlassToast(
+                                            context, "Prompt Saved");
                                       }
                                     },
                                   )
@@ -2638,7 +2769,8 @@ class _GeminiSettingsCardState extends ConsumerState<_GeminiSettingsCard> {
                               : TextButton.icon(
                                   icon: const Icon(Icons.play_arrow),
                                   label: const Text("Test Connection"),
-                                  onPressed: () => _testConnection(apiKey, settings.geminiModel),
+                                  onPressed: () => _testConnection(
+                                      apiKey, settings.geminiModel),
                                 ),
                         ],
                       ),
