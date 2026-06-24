@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_glass_background"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/widget_placeholder_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tap to configure"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <!-- Settings Button (Top Right) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Image Content (Flutter Rendered) -->
+        <ImageView
+            android:id="@+id/widget_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_settings"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_settings_widget"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:layout_gravity="top|end"
+            android:contentDescription="Settings"
+            android:tint="#80FFFFFF" />
+    </FrameLayout>
+
+</LinearLayout>

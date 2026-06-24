@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_glass_background"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <!-- Top Section: Flutter Rendered Content (Name, Stats, Graph) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/widget_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitCenter" />
+
+        <!-- Settings Overlay -->
+        <ImageButton
+            android:id="@+id/widget_btn_settings"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_settings_widget"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:layout_gravity="top|end"
+            android:contentDescription="Settings"
+            android:tint="#80FFFFFF" />
+    </FrameLayout>
+
+    <!-- Bottom Section: Interactive Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="4dp">
+
+        <!-- Present -->
+        <ImageButton
+            android:id="@+id/btn_present"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_check"
+            android:background="?android:attr/selectableItemBackground"
+            android:tint="#4CAF50"
+            android:scaleType="centerInside"
+            android:contentDescription="Present" />
+
+        <!-- Proxy -->
+        <ImageButton
+            android:id="@+id/btn_proxy"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_proxy"
+            android:background="?android:attr/selectableItemBackground"
+            android:tint="#FFC107"
+            android:scaleType="centerInside"
+            android:contentDescription="Proxy" />
+
+        <!-- Absent -->
+        <ImageButton
+            android:id="@+id/btn_absent"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:src="@drawable/ic_close"
+            android:background="?android:attr/selectableItemBackground"
+            android:tint="#E53935"
+            android:scaleType="centerInside"
+            android:contentDescription="Absent" />
+
+    </LinearLayout>
+
+</LinearLayout>

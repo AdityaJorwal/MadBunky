@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_glass_background"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="My Stats"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium" />
+
+        <ImageButton
+            android:id="@+id/widget_btn_settings"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_settings_widget"
+            android:background="@android:color/transparent"
+            android:scaleType="centerInside"
+            android:contentDescription="Settings"
+            android:tint="#80FFFFFF" />
+    </LinearLayout>
+
+    <GridView
+        android:id="@+id/widget_me_grid"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:numColumns="2"
+        android:horizontalSpacing="8dp"
+        android:verticalSpacing="8dp"
+        android:stretchMode="columnWidth"
+        android:gravity="center"
+        android:scrollbars="none" /> <!-- Hide scrollbar for cleaner look -->
+
+</LinearLayout>
